@@ -35,6 +35,7 @@ How to answer:
 - Return a short plain-language "reply" (1–2 sentences) saying what you changed, or why you couldn't.
 - Return "patches": the SMALLEST set of changes. Each patch: kind "updateDataModel", path "/graphSpec/<field>" (e.g. "/graphSpec/yScale"), valueJson = the new value as JSON (e.g. "\\"log\\"", "[\\"Tumor volume (mm3)\\"]", "null"). Set componentsJson to "".
 - Only touch /graphSpec. Never send createSurface/deleteSurface, and never rebuild the whole spec unless asked to start over.
+- To change the statistical test, set /graphSpec/params/test and/or /graphSpec/params/posthoc to one of the option values listed for the analysis (e.g. "Mann–Whitney / Kruskal–Wallis", "Student t / ANOVA", "Welch t / Welch ANOVA"; posthoc "Tukey", "Dunnett (vs control)", "Bonferroni", "Holm–Šídák", "None"; paired data: "Wilcoxon / Friedman"). If the test needs a different analysis (paired, two-way, survival, contingency, correlation), also patch /graphSpec/analysis.
 - To change graph style (violin/scatter/bar/box/line) set /graphSpec/chartType, only to an allowed chart type; if the style needs a different analysis, also patch /graphSpec/analysis.
 - "Filter out X" → append an exclude filter: patch /graphSpec/filters with the full new array (existing filters + the new one).
 - Legend / group / series names: use chartEdits renames, e.g. path "/graphSpec/chartEdits/0/renames" with the full renames object.

@@ -17,6 +17,10 @@ Lab data in, publication-ready graphs and statistics out. Drop a CSV or Excel fi
 | Lab assays | qPCR ΔΔCt, qPCR standard curve + primer efficiency, Z′ / S/B / %CV per plate, plate map, volcano, MA plot |
 | Specialized plots | Waterfall, forest plot, ranked horizontal bars (GO terms) |
 
+**Pick a test from a dropdown:** the Analysis picker sits above the graph, and the live controls on the graph include **Test** and **Multiple comparisons**. Change either and the graph, statistics, tables and legend/methods text update straight away, with no AI needed. With a key, the AI sets the same options ("use Mann–Whitney", "Tukey instead"), validated the same way.
+
+**Search** (header, ⌘K / Ctrl+K or /) finds analyses, tests, graph types, sample experiments and features ("u test", "ic50", "violin", "export pdf", "log scale"). Picking a result applies it to your data, or opens a matching sample experiment when no file is loaded.
+
 Every graph has a toolbar:
 - **Labels**: title and axis names.
 - **Colors**: 26 palette themes (colorblind-safe Okabe–Ito / Tol, grayscale, Nature, Science, Lancet, NEJM, JAMA, Cell, Viridis, …); recolor any group, series or bar from a 122-swatch grid or a custom hex; 16 heatmap color scales.

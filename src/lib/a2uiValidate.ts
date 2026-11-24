@@ -10,7 +10,7 @@ import { GraphSpecSchema, SURFACE_ID, chartTypesFor, normalizeSpec, setPath, val
 import type { Dataset } from "./parse"
 
 /** The only component types a research-graph surface may contain. */
-export const LOCKED_COMPONENTS = ["Column", "Row", "Text", "Card", "Chart", "ChartGrid", "StatsTable", "ChartTypeControl", "ScaleControl", "FilterControl", "ExportButton", "FigureText"] as const
+export const LOCKED_COMPONENTS = ["Column", "Row", "Text", "Card", "Chart", "ChartGrid", "StatsTable", "ChartTypeControl", "ScaleControl", "FilterControl", "ExportButton", "FigureText", "TestControl"] as const
 
 const ComponentSchema = z.object({ id: z.string().min(1), component: z.string().min(1) }).passthrough()
 

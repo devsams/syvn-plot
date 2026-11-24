@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { injectBasicCatalogStyles } from "@a2ui/web_core/v0_9/basic_catalog"
 
 import { ApiKeyModal } from "./ApiKeyModal"
+import { SearchBar } from "./SearchBar"
+import type { SearchEntry } from "./lib/searchIndex"
 import { ChatPanel, type Computed } from "./ChatPanel"
 import { DataPreview, DataSummary } from "./DataSummary"
 import type { ComponentOverride } from "./lib/a2uiValidate"
@@ -9,7 +11,8 @@ import { aiStatus } from "./lib/ai"
 import { ANALYSES, analysisById, type AnalysisId } from "./lib/analysis-defs"
 import { defaultParams, detectAll, levelsOf, type Roles } from "./lib/analyses"
 import { clearByok, loadByok, providerName, saveByok, type ByokSettings } from "./lib/byok"
-import { normalizeSpec, renameInSpec, specFromDetection, type GraphSpec } from "./lib/graphSpec"
+import { chartTypesFor, normalizeSpec, renameInSpec, specFromDetection, type ChartType, type GraphSpec } from "./lib/graphSpec"
+import type { ColumnStyle } from "./lib/specs"
 import { parseCsvText, readFile, type Dataset } from "./lib/parse"
 import { SAMPLE_EXPERIMENTS, type SampleExperiment } from "./lib/samples"
 import { ResearchSurface } from "./research/ResearchSurface"
@@ -37,6 +40,8 @@ export default function App() {
   const [keyOpen, setKeyOpen] = useState(false)
   const [status, setStatus] = useState<Awaited<ReturnType<typeof aiStatus>>>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const noticeTimer = useRef<number | undefined>(undefined)
   const [computed, setComputed] = useState<Computed>(null)
   const [requested, setRequested] = useState<AiTask | null>(null)
   const [cleanupUndo, setCleanupUndo] = useState<{ dataset: Dataset; spec: GraphSpec | null }[]>([])
@@ -70,12 +75,14 @@ export default function App() {
   }, [])
 
   /** Samples open straight into the analysis and settings they're meant to show. */
-  const loadSample = async (exp: SampleExperiment) => {
+  const loadSample = async (exp: SampleExperiment, extra: { params?: Record<string, string>; chartType?: ChartType } = {}) => {
     const text = await fetch(`${import.meta.env.BASE_URL}samples/${exp.file}`).then((r) => r.text())
     const ds = parseCsvText(exp.file, text)
     setFile(null)
     setProblem(null)
-    newDataset(ds, specFromDetection(ds, exp.analysis, { roles: exp.roles, params: exp.params, style: exp.style, error: exp.error }))
+    let next = specFromDetection(ds, exp.analysis, { roles: exp.roles, params: { ...(exp.params ?? {}), ...(extra.params ?? {}) }, style: (extra.chartType as ColumnStyle | undefined) ?? exp.style, error: exp.error })
+    if (extra.chartType && chartTypesFor(next.analysis).includes(extra.chartType)) next = normalizeSpec({ ...next, chartType: extra.chartType }, next, ds)
+    newDataset(ds, next)
     setSample(exp)
     setSamplesOpen(false)
   }
@@ -130,6 +137,66 @@ export default function App() {
     setSpec(last.spec)
   }
 
+  /** Search: apply an analysis / test / graph type to the loaded data, load a sample, or open a feature. */
+  const flash = (text: string) => {
+    setNotice(text)
+    window.clearTimeout(noticeTimer.current)
+    noticeTimer.current = window.setTimeout(() => setNotice(null), 6000)
+  }
+  const scrollToGraph = () => setTimeout(() => document.querySelector(".workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120)
+  const clickIn = (selector: string, text: string) => setTimeout(() => ([...document.querySelectorAll(selector)].find((b) => b.textContent?.includes(text)) as HTMLElement | undefined)?.click(), 350)
+
+  const onSearchPick = async (e: SearchEntry) => {
+    const a = e.action
+    if (a.kind === "sample") {
+      await loadSample(SAMPLE_EXPERIMENTS[a.index])
+      flash(`Opened the sample “${SAMPLE_EXPERIMENTS[a.index].title}”.`)
+      return scrollToGraph()
+    }
+    if (a.kind === "feature") {
+      if (a.feature === "apikey") return setKeyOpen(true)
+      if (a.feature === "upload") return inputRef.current?.click()
+      if (!dataset || !spec) return flash("Load a file or pick a sample experiment first, then try this again.")
+      scrollToGraph()
+      if (a.feature === "logy") {
+        setSpec({ ...spec, yScale: "log" })
+        return flash("✓ Y axis switched to log scale.")
+      }
+      if (a.feature === "export") return clickIn(".export-ctl button", "Export")
+      if (a.feature === "colors") return clickIn(".surface .chart-actions button", "Colors")
+      if (a.feature === "text") return clickIn(".surface .chart-actions button", "Text")
+      if (a.feature === "fullscreen") return clickIn(".surface .chart-actions button", "Full screen")
+      if (a.feature === "filter") return clickIn(".filter-ctl button", "+ Filter")
+      if (a.feature === "legend") return setTimeout(() => document.querySelector(".figure-text")?.scrollIntoView({ behavior: "smooth", block: "center" }), 150)
+      if (a.feature === "rename") {
+        const d = document.querySelector("details.preview") as HTMLDetailsElement | null
+        if (d) d.open = true
+        return clickIn(".preview-head button", "Rename")
+      }
+      if (a.feature === "cleanup") return aiAvailable ? setRequested("cleanup") : (flash("Data cleanup uses AI — add your API key first."), setKeyOpen(true))
+      return
+    }
+    const analyses = a.kind === "analysis" ? [a.analysis] : a.analyses
+    const params = a.params ?? {}
+    const chartType = a.kind === "analysis" ? a.chartType : undefined
+    if (!dataset) {
+      const exp = SAMPLE_EXPERIMENTS.find((x) => analyses.includes(x.analysis))
+      if (!exp) return flash("Upload a file first.")
+      await loadSample(exp, { params, chartType })
+      flash(`Showing “${e.title}” on the sample “${exp.title}”. Drop your own file to use your data.`)
+      return scrollToGraph()
+    }
+    const current = spec?.analysis as AnalysisId | undefined
+    const id = current && analyses.includes(current) ? current : [...analyses].sort((x, y) => scoreOf(y) - scoreOf(x))[0]
+    let next = spec ? (spec.analysis === id ? spec : normalizeSpec({ ...spec, analysis: id }, spec, dataset)) : specFromDetection(dataset, id)
+    next = { ...next, params: { ...next.params, ...params } }
+    if (chartType && chartTypesFor(id).includes(chartType)) next = normalizeSpec({ ...next, chartType }, next, dataset)
+    setSpec(next)
+    const fits = scoreOf(id) >= 30
+    flash(`✓ ${e.title}${fits ? "" : " — this analysis may not match how your data is laid out; check “Columns & options”."}`)
+    scrollToGraph()
+  }
+
   const def = spec ? analysisById(spec.analysis) : undefined
   const scoreOf = (id: string) => detections.find((d) => d.id === id)?.score ?? 0
   const freeKey = status?.serverKeys?.[byok.provider]
@@ -145,10 +212,19 @@ export default function App() {
           <h1>BenchPlot</h1>
           <p>Lab data in, publication-ready graphs and statistics out. Upload a CSV or Excel sheet, or start from a sample experiment.</p>
         </div>
-        <button type="button" className={`key-btn ${byok.key ? "has-key" : ""}`} onClick={() => setKeyOpen(true)}>
-          🔑 {byok.key ? `${providerName(byok.provider)} key · unlimited` : "API key"}
-        </button>
+        <div className="top-actions">
+          <SearchBar onPick={(e) => void onSearchPick(e)} />
+          <button type="button" className={`key-btn ${byok.key ? "has-key" : ""}`} onClick={() => setKeyOpen(true)}>
+            🔑 {byok.key ? `${providerName(byok.provider)} key · unlimited` : "API key"}
+          </button>
+        </div>
       </header>
+      {notice && (
+        <div className="notice" role="status">
+          {notice}
+          <button type="button" className="icon-btn" onClick={() => setNotice(null)} aria-label="Dismiss">✕</button>
+        </div>
+      )}
 
       <section
         className={`drop ${dragging ? "drop-active" : ""} ${dataset ? "drop-compact" : ""}`}
@@ -233,13 +309,7 @@ export default function App() {
             </div>
           )}
 
-          <details className="panel setup">
-            <summary>
-              <strong>Graph setup</strong> · {def.label}
-              {spec.xColumn ? ` · X: ${spec.xColumn}` : ""}
-              {spec.yColumns.length ? ` · Y: ${spec.yColumns.slice(0, 3).join(", ")}${spec.yColumns.length > 3 ? "…" : ""}` : ""}
-              {spec.groupBy ? ` · Group: ${spec.groupBy}` : ""}
-            </summary>
+          <section className="panel analysis-bar">
             <div className="row">
               {dataset.sheetNames && dataset.sheetNames.length > 1 && file && (
                 <label className="field">
@@ -266,13 +336,24 @@ export default function App() {
                   ))}
                 </select>
               </label>
+            </div>
+            <p className="desc">
+              {def.description} <span className="dim">● = fits this data. Pick the test and graph style on the graph below.</span>
+            </p>
+          </section>
+
+          <details className="panel setup">
+            <summary>
+              <strong>Columns &amp; options</strong>
+              {spec.xColumn ? ` · X: ${spec.xColumn}` : ""}
+              {spec.yColumns.length ? ` · Y: ${spec.yColumns.slice(0, 3).join(", ")}${spec.yColumns.length > 3 ? "…" : ""}` : ""}
+              {spec.groupBy ? ` · Group: ${spec.groupBy}` : ""}
+            </summary>
+            <div className="row">
               <button type="button" className="ghost" onClick={() => setShowMessages((v) => !v)}>
                 {showMessages ? "Hide" : "Show"} A2UI messages
               </button>
             </div>
-            <p className="desc">
-              {def.description} <span className="dim">● = fits this data</span>
-            </p>
             <div className="row wrap">
               {def.roles.map((r) => {
                 const eligible = dataset.columns.filter((c) => r.kinds.includes(c.kind) || (r.kinds.includes("category") && c.kind === "text"))
@@ -305,20 +386,10 @@ export default function App() {
                 )
               })}
               {(def.params ?? [])
-                .filter((p) => !(spec.analysis === "two_way" && p.key === "chart"))
+                .filter((p) => !(spec.analysis === "two_way" && p.key === "chart") && p.key !== "test" && p.key !== "posthoc")
                 .map((p) => {
                   const src = p.levelsOf ? dataset.columns.find((c) => c.name === spec.roles[p.levelsOf!]?.[0]) : undefined
                   const choices = p.values ?? (p.columnsOf ? (spec.roles[p.columnsOf] ?? []) : src ? levelsOf(src) : [])
-                  const auto = p.key === "posthoc" ? ((spec.params.test ?? "").startsWith("Mann") ? "Dunn's (automatic)" : spec.params.test === "Welch t / Welch ANOVA" ? "Games–Howell (automatic)" : null) : null
-                  if (auto)
-                    return (
-                      <label key={p.key} className="field">
-                        <span>{p.label}</span>
-                        <select value={auto} disabled>
-                          <option>{auto}</option>
-                        </select>
-                      </label>
-                    )
                   return (
                     <label key={p.key} className="field">
                       <span>{p.label}</span>

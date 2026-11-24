@@ -13,7 +13,7 @@ import { basicCatalog } from "@a2ui/web_core/v0_9/basic_catalog"
 import { createComponentImplementation } from "@a2ui/react/v0_9"
 
 import { ChartCard } from "../ChartCard"
-import { ChartTypeView, ExportView, FigureTextView, FilterView, ScaleView } from "../research/Controls"
+import { ChartTypeView, ExportView, FigureTextView, FilterView, ScaleView, TestView } from "../research/Controls"
 import { useLabelEdit } from "../research/context"
 import { LOCKED_COMPONENTS } from "../lib/a2uiValidate"
 import type { ChartType, Filter } from "../lib/graphSpec"
@@ -109,16 +109,21 @@ const ExportButton = createComponentImplementation(ExportButtonApi, ({ props }) 
 const FigureTextApi = { name: "FigureText", schema: z.object({ legend: CommonSchemas.DynamicString, methods: CommonSchemas.DynamicString, edited: CommonSchemas.DynamicBoolean.optional() }) }
 const FigureText = createComponentImplementation(FigureTextApi, ({ props }) => <FigureTextView legend={String(props.legend ?? "")} methods={String(props.methods ?? "")} edited={!!props.edited} />)
 
+const TestControlApi = { name: "TestControl", schema: z.object({ options: CommonSchemas.DynamicValue, test: CommonSchemas.DynamicString, posthoc: CommonSchemas.DynamicString }) }
+const TestControl = createComponentImplementation(TestControlApi, ({ props }) => (
+  <TestView options={props.options as unknown as { test: string[] | null; posthoc: string[] | null; autoPosthoc: string | null } | null} test={String(props.test ?? "")} posthoc={String(props.posthoc ?? "")} />
+))
+
 const BASIC_ALLOWED = ["Column", "Row", "Text", "Card"]
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const graphsCatalog = (basicCatalog as any).derive({
   catalogId: CATALOG_ID,
-  components: [...BASIC_ALLOWED, Chart, StatsTable, ChartGrid, ChartTypeControl, ScaleControl, FilterControl, ExportButton, FigureText],
+  components: [...BASIC_ALLOWED, Chart, StatsTable, ChartGrid, ChartTypeControl, ScaleControl, FilterControl, ExportButton, FigureText, TestControl],
 })
 
 // Keep the runtime catalog and the validator's allow-list in step.
 if (import.meta.env.DEV) {
-  const names = [...BASIC_ALLOWED, "Chart", "StatsTable", "ChartGrid", "ChartTypeControl", "ScaleControl", "FilterControl", "ExportButton", "FigureText"].sort().join()
+  const names = [...BASIC_ALLOWED, "Chart", "StatsTable", "ChartGrid", "ChartTypeControl", "ScaleControl", "FilterControl", "ExportButton", "FigureText", "TestControl"].sort().join()
   if (names !== [...LOCKED_COMPONENTS].sort().join()) console.warn("BenchPlot: catalog and LOCKED_COMPONENTS differ")
 }

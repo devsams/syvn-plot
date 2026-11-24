@@ -36,7 +36,8 @@ export function layoutComponents(chartCount: number, tableCount: number, overrid
   const components: Record<string, unknown>[] = [
     { id: "title", component: "Text", variant: "h3", text: { path: "/title" } },
     { id: "headline", component: "Text", variant: "caption", text: { path: "/headline" } },
-    { id: "controls", component: "Row", children: ["ctl_type", "ctl_x", "ctl_y", "ctl_filter", "ctl_export"] },
+    { id: "controls", component: "Row", children: ["ctl_type", "ctl_test", "ctl_x", "ctl_y", "ctl_filter", "ctl_export"] },
+    { id: "ctl_test", component: "TestControl", options: { path: "/ui/testOptions" }, test: { path: "/graphSpec/params/test" }, posthoc: { path: "/graphSpec/params/posthoc" } },
     { id: "ctl_type", component: "ChartTypeControl", value: { path: "/graphSpec/chartType" }, options: { path: "/ui/chartTypes" }, errorBars: { path: "/graphSpec/errorBars" }, showErrorBars: { path: "/ui/usesError" } },
     { id: "ctl_x", component: "ScaleControl", axis: "x", value: { path: "/graphSpec/xScale" } },
     { id: "ctl_y", component: "ScaleControl", axis: "y", value: { path: "/graphSpec/yScale" } },
@@ -125,7 +126,7 @@ export function ResearchSurface({ ds, spec, onSpec, title, overrides, showMessag
       "/title": title,
       "/headline": headline,
       "/figureText": { ...(text ?? { legend: "", methods: "" }), edited: !!spec.figureText },
-      "/ui": { chartTypes: chartTypesFor(spec.analysis), usesError: !!def?.usesError, filterColumns: filterColumns(ds) },
+      "/ui": { chartTypes: chartTypesFor(spec.analysis), usesError: !!def?.usesError, filterColumns: filterColumns(ds), testOptions: testOptions(spec) },
     }
     const prevCharts = Number(sent.current.data["#charts"] ?? -1)
     const prevTables = Number(sent.current.data["#tables"] ?? -1)
@@ -180,6 +181,16 @@ export function ResearchSurface({ ds, spec, onSpec, title, overrides, showMessag
       </GraphControlContext.Provider>
     </EditContext.Provider>
   )
+}
+
+/** Test / multiple-comparison choices for the current analysis (null when it has none). */
+function testOptions(spec: GraphSpec) {
+  const def = analysisById(spec.analysis)
+  const test = def?.params?.find((p) => p.key === "test")?.values ?? null
+  const posthoc = def?.params?.find((p) => p.key === "posthoc")?.values ?? null
+  const t = spec.params.test ?? ""
+  const autoPosthoc = posthoc ? (t.startsWith("Mann") ? "Dunn's (automatic)" : t === "Welch t / Welch ANOVA" ? "Games–Howell (automatic)" : null) : null
+  return test || posthoc ? { test, posthoc, autoPosthoc } : null
 }
 
 function getSurface(p: MessageProcessor<ReactCatalogComponent>) {

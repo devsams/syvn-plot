@@ -203,3 +203,41 @@ export function FigureTextView({ legend, methods, edited }: { legend: string; me
     </div>
   )
 }
+
+type TestOptions = { test: string[] | null; posthoc: string[] | null; autoPosthoc: string | null }
+
+/** Statistical test + multiple-comparisons dropdowns (shown for analyses that offer them). */
+export function TestView({ options, test, posthoc }: { options: TestOptions | null; test: string; posthoc: string }) {
+  const api = useGraphControl()
+  if (!options || (!options.test && !options.posthoc)) return null
+  return (
+    <div className="ctl test-ctl">
+      {options.test && (
+        <label className="ctl-field">
+          <span>Test</span>
+          <select value={test} onChange={(e) => api?.patch("/graphSpec/params/test", e.target.value)}>
+            {options.test.map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </select>
+        </label>
+      )}
+      {options.posthoc && (
+        <label className="ctl-field">
+          <span>Multiple comparisons</span>
+          {options.autoPosthoc ? (
+            <select value={options.autoPosthoc} disabled>
+              <option>{options.autoPosthoc}</option>
+            </select>
+          ) : (
+            <select value={posthoc} onChange={(e) => api?.patch("/graphSpec/params/posthoc", e.target.value)}>
+              {options.posthoc.map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </select>
+          )}
+        </label>
+      )}
+    </div>
+  )
+}
