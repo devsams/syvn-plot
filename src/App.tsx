@@ -4,6 +4,8 @@ import { injectBasicCatalogStyles } from "@a2ui/web_core/v0_9/basic_catalog"
 import { ApiKeyModal } from "./ApiKeyModal"
 import { SearchBar } from "./SearchBar"
 import { Icon } from "./Icon"
+import { START_TOUR_EVENT, cleanupDriverDom, replayTour, runTour, shouldAutoStart } from "./tour"
+import type { Driver } from "driver.js"
 import type { SearchEntry } from "./lib/searchIndex"
 import { ChatPanel, type Computed } from "./ChatPanel"
 import { DataPreview, DataSummary } from "./DataSummary"
@@ -206,6 +208,32 @@ export default function App() {
   const aiActions = useMemo(() => ({ available: aiAvailable, run: (t: AiTask) => setRequested(t) }), [aiAvailable])
   const title = sample && dataset && sample.file === dataset.fileName ? `${sample.title} (${dataset.fileName})` : dataset ? (dataset.sheetName ? `${dataset.fileName} — ${dataset.sheetName}` : dataset.fileName) : ""
 
+  const loadSampleRef = useRef(loadSample)
+  loadSampleRef.current = loadSample
+  useEffect(() => {
+    let tour: Driver | null = null
+    const start = () => {
+      if (tour?.isActive()) tour.destroy()
+      cleanupDriverDom()
+      setSamplesOpen(true)
+      tour = runTour({
+        ensureGraph: () => {
+          const exp = SAMPLE_EXPERIMENTS.find((e) => e.file === "drug-response.csv") ?? SAMPLE_EXPERIMENTS[0]
+          return loadSampleRef.current(exp)
+        },
+      })
+    }
+    window.addEventListener(START_TOUR_EVENT, start)
+    let raf = 0
+    if (shouldAutoStart()) raf = requestAnimationFrame(() => requestAnimationFrame(start))
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener(START_TOUR_EVENT, start)
+      if (tour?.isActive()) tour.destroy()
+      cleanupDriverDom()
+    }
+  }, [])
+
   const openSearch = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
   const openSamples = (group?: string) => {
     setSamplesOpen(true)
@@ -229,8 +257,11 @@ export default function App() {
           <button type="button" className="brand-search" aria-label="Search" onClick={openSearch}>
             <Icon name="search" />
           </button>
+          <button type="button" className="brand-search mobile-only" aria-label="Take the tour" onClick={replayTour}>
+            <Icon name="compass" />
+          </button>
         </div>
-        <nav className="nav">
+        <nav className="nav" data-tour="nav">
           <button type="button" className={`nav-item ${!dataset ? "on" : ""}`} onClick={goHome}>
             <Icon name="home" /> Home
           </button>
@@ -257,7 +288,7 @@ export default function App() {
             )}
           </div>
         )}
-        <div className="nav-section nav-scroll">
+        <div className="nav-section nav-scroll" data-tour="groups">
           <div className="nav-label">Analyses</div>
           {GROUPS.map((g) => (
             <button key={g} type="button" className="nav-item nav-plain" onClick={() => openSamples(g)}>
@@ -266,6 +297,9 @@ export default function App() {
           ))}
         </div>
         <div className="sidebar-foot">
+          <button type="button" className="nav-item" data-tour="replay" onClick={replayTour}>
+            <Icon name="compass" /> Take the tour
+          </button>
           <button type="button" className={`nav-item key-item ${byok.key ? "has-key" : ""}`} onClick={() => setKeyOpen(true)}>
             <span className="avatar">
               <Icon name="key" size={14} />
@@ -295,6 +329,7 @@ export default function App() {
       )}
 
       <section
+        data-tour="upload"
         className={`drop ${dragging ? "drop-active" : ""} ${dataset ? "drop-compact" : ""}`}
         onDragOver={(e) => {
           e.preventDefault()
@@ -327,7 +362,7 @@ export default function App() {
         {!dataset && <span>or click to choose a file · .csv .tsv .xlsx .xls</span>}
       </section>
 
-      <details id="samples" className="samples-box" open={samplesOpen} onToggle={(e) => setSamplesOpen((e.target as HTMLDetailsElement).open)}>
+      <details id="samples" data-tour="samples" className="samples-box" open={samplesOpen} onToggle={(e) => setSamplesOpen((e.target as HTMLDetailsElement).open)}>
         <summary>Sample experiments ({SAMPLE_EXPERIMENTS.length}) — one for every analysis</summary>
         {GROUPS.map((g) => (
           <div key={g} id={`group-${g}`} className="sample-group">
@@ -377,7 +412,7 @@ export default function App() {
             </div>
           )}
 
-          <section className="panel analysis-bar">
+          <section className="panel analysis-bar" data-tour="analysis">
             <div className="row">
               {dataset.sheetNames && dataset.sheetNames.length > 1 && file && (
                 <label className="field">
@@ -491,7 +526,7 @@ export default function App() {
               />
               </AiActionsContext.Provider>
             </main>
-            <aside className="side">
+            <aside className="side" data-tour="assistant">
               <ChatPanel
                 dataset={dataset}
                 spec={spec}

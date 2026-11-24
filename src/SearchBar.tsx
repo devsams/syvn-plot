@@ -42,7 +42,7 @@ export function SearchBar({ onPick }: { onPick: (e: SearchEntry) => void }) {
   }
 
   return (
-    <div className="search" ref={boxRef}>
+    <div className="search" ref={boxRef} data-tour="search">
       <span className="search-icon" aria-hidden><Icon name="search" size={14} /></span>
       <input
         ref={inputRef}
