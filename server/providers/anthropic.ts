@@ -11,6 +11,8 @@ const ZOD: Record<SchemaId, z.ZodObject> = {
   cleanup: z.object({ reply: z.string(), ops: z.array(z.object({ op: z.enum(["trim_whitespace", "merge_values", "to_number", "rename_column", "drop_rows", "drop_empty_rows", "drop_column", "fill_down", "wide_to_long"]), column: z.string(), argsJson: z.string() })) }),
 }
 
+const FALLBACK_MODELS = new Set(["claude-fable-5-2", "claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"])
+
 /** Maps SDK errors (typed classes, most specific first) to plain-language ProviderErrors. */
 function mapError(e: unknown): never {
   if (e instanceof ProviderError) throw e
@@ -29,15 +31,15 @@ export async function anthropicChat(key: string, model: string, prompt: Prompt, 
   while (messages[0]?.role === "assistant") messages.shift()
   messages.push({ role: "user", content: prompt.user })
   try {
+    // Server-side refusal fallback exists only on some models (not on Haiku 5.5); send it only where supported.
+    const fallback = FALLBACK_MODELS.has(model) ? { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const } : {}
     const res = await client.beta.messages.parse({
       model,
       max_tokens: 16000,
-      // Re-runs the request on a fallback model if the primary model declines (opt-in, routed by refusal category).
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
+      ...fallback,
       system: prompt.system,
       messages,
-      output_config: { format: zodOutputFormat(ZOD[schema]) },
+      output_config: { effort: prompt.effort, format: zodOutputFormat(ZOD[schema]) },
     })
     if (res.stop_reason === "refusal") throw new ProviderError("refused", "Claude declined this request. Try rephrasing it.")
     if (res.stop_reason === "max_tokens" || !res.parsed_output) throw new ProviderError("bad_output", "Claude's answer was cut off or not in the expected format. Try again.")

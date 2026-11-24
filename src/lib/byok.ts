@@ -10,7 +10,7 @@ export type ByokSettings = { provider: ProviderId; model: string; key: string; r
 export const PROVIDERS: { id: ProviderId; name: string; defaultModel: string; keyHint: string; keyUrl: string }[] = [
   { id: "gemini", name: "Google Gemini", defaultModel: "gemini-3.5-flash-lite", keyHint: "Starts with “AIza…”", keyUrl: "https://aistudio.google.com/apikey" },
   { id: "openai", name: "OpenAI", defaultModel: "gpt-4.1-mini", keyHint: "Starts with “sk-…”", keyUrl: "https://platform.openai.com/api-keys" },
-  { id: "anthropic", name: "Anthropic Claude", defaultModel: "claude-opus-5-5", keyHint: "Starts with “sk-ant-…”", keyUrl: "https://console.anthropic.com/settings/keys" },
+  { id: "anthropic", name: "Anthropic Claude", defaultModel: "claude-haiku-5-5", keyHint: "Starts with “sk-ant-…”", keyUrl: "https://console.anthropic.com/settings/keys" },
 ]
 
 const KEY = "benchplot.byok"
@@ -20,7 +20,11 @@ export function loadByok(): ByokSettings {
   for (const store of [() => localStorage, () => sessionStorage]) {
     try {
       const raw = store().getItem(KEY)
-      if (raw) return { ...empty, ...JSON.parse(raw) }
+      if (raw) {
+        const saved = { ...empty, ...JSON.parse(raw) } as ByokSettings
+        if (saved.provider === "anthropic" && saved.model === "claude-opus-5-5") saved.model = "claude-haiku-5-5" // old default → new cheaper default
+        return saved
+      }
     } catch {
       /* storage blocked */
     }

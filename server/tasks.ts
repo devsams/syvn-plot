@@ -24,7 +24,8 @@ export type TaskRequest = {
   sample?: unknown
 }
 
-export type Prompt = { system: string; user: string; history: ChatTurn[] }
+/** effort: how much the model may think (Claude) — low keeps simple tasks cheap; the test advisor gets a bit more. */
+export type Prompt = { system: string; user: string; history: ChatTurn[]; effort: "low" | "medium" }
 
 const ADVISE_PROMPT = `You are a friendly biostatistics advisor inside BenchPlot, a GraphPad-Prism-like app for lab researchers.
 Recommend the most appropriate analysis for the researcher's data, chosen ONLY from BenchPlot's analyses:
@@ -68,6 +69,11 @@ Rules:
 - In "reply", list each step in plain words with why it's needed (bullet-like sentences).`
 
 export function buildPrompt(req: TaskRequest): Prompt {
+  const p = buildPromptText(req)
+  return { ...p, effort: req.task === "advise" ? "medium" : "low" }
+}
+
+function buildPromptText(req: TaskRequest): Omit<Prompt, "effort"> {
   const history = (req.history ?? []).slice(-8)
   const columns = `Uploaded file (column metadata):\n${JSON.stringify(req.dataset ?? {}).slice(0, 14000)}`
   switch (req.task) {

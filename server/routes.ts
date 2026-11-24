@@ -17,7 +17,7 @@ import { anthropicChat, anthropicVerify } from "./providers/anthropic"
 import { geminiChat, geminiVerify } from "./providers/gemini"
 import { openaiChat, openaiVerify } from "./providers/openai"
 
-export const DEFAULT_MODELS: Record<ProviderId, string> = { gemini: "gemini-3.5-flash-lite", openai: "gpt-4.1-mini", anthropic: "claude-opus-5-5" }
+export const DEFAULT_MODELS: Record<ProviderId, string> = { gemini: "gemini-3.5-flash-lite", openai: "gpt-4.1-mini", anthropic: "claude-haiku-5-5" }
 
 const CHAT: Record<ProviderId, (key: string, model: string, prompt: Prompt, schema: SchemaId) => Promise<ProviderResult>> = { gemini: geminiChat, openai: openaiChat, anthropic: anthropicChat }
 const TASKS: TaskId[] = ["edit", "advise", "summarize", "polish", "cleanup"]
