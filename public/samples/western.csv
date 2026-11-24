@@ -1,0 +1,17 @@
+Treatment,p-ERK band,β-actin band
+Control,10216,24301
+Control,11291,24808
+Control,9563,23868
+Control,12017,29951
+EGF 5 min,35614,35808
+EGF 5 min,34612,27379
+EGF 5 min,28599,23247
+EGF 5 min,29898,23718
+EGF 15 min,19729,26098
+EGF 15 min,26684,29806
+EGF 15 min,23460,28672
+EGF 15 min,18685,22752
+EGF + inhibitor,11675,26686
+EGF + inhibitor,10965,23873
+EGF + inhibitor,8831,17865
+EGF + inhibitor,11124,24460

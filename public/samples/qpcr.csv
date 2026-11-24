@@ -1,0 +1,37 @@
+Sample,Gene,Biological replicate,Ct
+Control,GAPDH,1,18.42
+Control,IL6,1,28.41
+Control,TNF,1,26.59
+Control,CCL2,1,27.44
+Control,GAPDH,2,18.09
+Control,IL6,2,27.67
+Control,TNF,2,26.24
+Control,CCL2,2,26.47
+Control,GAPDH,3,17.86
+Control,IL6,3,27.63
+Control,TNF,3,26.43
+Control,CCL2,3,26.6
+LPS,GAPDH,1,18.27
+LPS,IL6,1,23.8
+LPS,TNF,1,24.05
+LPS,CCL2,1,23.85
+LPS,GAPDH,2,18.06
+LPS,IL6,2,23.51
+LPS,TNF,2,24.12
+LPS,CCL2,2,23.74
+LPS,GAPDH,3,18.13
+LPS,IL6,3,24.06
+LPS,TNF,3,24.1
+LPS,CCL2,3,23.84
+LPS + inhibitor,GAPDH,1,18.14
+LPS + inhibitor,IL6,1,26.31
+LPS + inhibitor,TNF,1,25.46
+LPS + inhibitor,CCL2,1,26
+LPS + inhibitor,GAPDH,2,17.78
+LPS + inhibitor,IL6,2,26.4
+LPS + inhibitor,TNF,2,25.74
+LPS + inhibitor,CCL2,2,26.09
+LPS + inhibitor,GAPDH,3,17.94
+LPS + inhibitor,IL6,3,26.22
+LPS + inhibitor,TNF,3,25.04
+LPS + inhibitor,CCL2,3,25.68

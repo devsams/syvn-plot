@@ -1,0 +1,61 @@
+Patient,Arm,Months,Status
+S1,Standard,18.6,1
+S2,Standard,32.8,0
+S3,Standard,1.4,1
+S4,Standard,11.1,1
+S5,Standard,1.6,1
+S6,Standard,21.1,1
+S7,Standard,11.8,1
+S8,Standard,16.5,1
+S9,Standard,13.4,1
+S10,Standard,3.2,1
+S11,Standard,28.8,1
+S12,Standard,6.3,1
+S13,Standard,39.1,1
+S14,Standard,10.1,1
+S15,Standard,24.6,1
+S16,Standard,32.2,0
+S17,Standard,2.4,1
+S18,Standard,17.1,1
+S19,Standard,8.3,1
+S20,Standard,31.3,0
+S21,Standard,10.9,1
+S22,Standard,8,1
+S23,Standard,7.7,1
+S24,Standard,3.4,1
+S25,Standard,0,1
+S26,Standard,17.8,1
+S27,Standard,14.9,1
+S28,Standard,13.7,1
+S29,Standard,4.1,1
+S30,Standard,3.4,1
+S31,New therapy,18.9,1
+S32,New therapy,41.6,0
+S33,New therapy,47.5,0
+S34,New therapy,38.2,0
+S35,New therapy,43.1,0
+S36,New therapy,3.5,1
+S37,New therapy,40.6,0
+S38,New therapy,5.8,1
+S39,New therapy,38.3,0
+S40,New therapy,43.5,1
+S41,New therapy,32.2,0
+S42,New therapy,5.7,1
+S43,New therapy,56.1,0
+S44,New therapy,3.5,1
+S45,New therapy,40.9,1
+S46,New therapy,37.9,0
+S47,New therapy,6.4,1
+S48,New therapy,22.4,1
+S49,New therapy,48.8,1
+S50,New therapy,35.2,1
+S51,New therapy,29.2,1
+S52,New therapy,37.2,1
+S53,New therapy,34.2,1
+S54,New therapy,48.2,0
+S55,New therapy,23.8,1
+S56,New therapy,39.2,0
+S57,New therapy,27.4,1
+S58,New therapy,45.6,0
+S59,New therapy,46.7,0
+S60,New therapy,9.5,1

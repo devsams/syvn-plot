@@ -1,0 +1,26 @@
+Term,-log10 P,Gene count,Ontology
+inflammatory response,13.9,44,BP
+response to lipopolysaccharide,14.11,41,BP
+cytokine-mediated signaling pathway,13.43,41,BP
+regulation of IL-6 production,13.02,40,BP
+neutrophil chemotaxis,12.3,35,BP
+type I interferon signaling,11.85,31,BP
+response to virus,12.06,33,BP
+positive regulation of NF-kB signaling,11.44,33,BP
+leukocyte migration,9.83,33,BP
+chemokine activity,10.1,32,MF
+cytokine activity,10.5,30,MF
+receptor ligand activity,9.38,34,MF
+extracellular space,8.85,21,CC
+external side of plasma membrane,8.04,21,CC
+regulation of apoptotic process,8.81,22,BP
+angiogenesis,6.43,27,BP
+response to hypoxia,6.53,29,BP
+glycolytic process,6.07,18,BP
+cell chemotaxis,5.21,31,BP
+T cell activation,5.15,25,BP
+antigen processing and presentation,6.51,18,BP
+MHC class II protein complex,4.9,11,CC
+negative regulation of viral genome replication,5.17,20,BP
+defense response to bacterium,3.16,19,BP
+fever generation,3.93,13,BP

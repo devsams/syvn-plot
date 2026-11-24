@@ -1,0 +1,25 @@
+Genotype,Treatment,Glucose (mg/dL)
+WT,Vehicle,109
+WT,Vehicle,97
+WT,Vehicle,128
+WT,Vehicle,118
+WT,Vehicle,101
+WT,Vehicle,119
+WT,Drug,117
+WT,Drug,110
+WT,Drug,110
+WT,Drug,90
+WT,Drug,111
+WT,Drug,98
+KO,Vehicle,183
+KO,Vehicle,189
+KO,Vehicle,196
+KO,Vehicle,179
+KO,Vehicle,178
+KO,Vehicle,197
+KO,Drug,115
+KO,Drug,111
+KO,Drug,122
+KO,Drug,129
+KO,Drug,99
+KO,Drug,124

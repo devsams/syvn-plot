@@ -1,0 +1,73 @@
+Group,Mouse,Day,Body weight (g)
+Control,C1,0,19.1
+Control,C1,7,19.5
+Control,C1,14,20
+Control,C1,21,20.6
+Control,C1,28,21.9
+Control,C1,35,22.1
+Control,C2,0,19
+Control,C2,7,20.1
+Control,C2,14,19.4
+Control,C2,21,20.9
+Control,C2,28,20.4
+Control,C2,35,22.1
+Control,C3,0,20.4
+Control,C3,7,20.6
+Control,C3,14,21.9
+Control,C3,21,21.6
+Control,C3,28,22.7
+Control,C3,35,22.1
+Control,C4,0,19.2
+Control,C4,7,20.1
+Control,C4,14,19.6
+Control,C4,21,21.5
+Control,C4,28,21.4
+Control,C4,35,22.4
+Control,C5,0,18.4
+Control,C5,7,19.3
+Control,C5,14,19
+Control,C5,21,21.4
+Control,C5,28,21
+Control,C5,35,22
+Control,C6,0,19.3
+Control,C6,7,21.1
+Control,C6,14,21.4
+Control,C6,21,21.7
+Control,C6,28,22.2
+Control,C6,35,22
+High-fat diet,H1,0,18.8
+High-fat diet,H1,7,19
+High-fat diet,H1,14,20.5
+High-fat diet,H1,21,21.1
+High-fat diet,H1,28,22.6
+High-fat diet,H1,35,24.4
+High-fat diet,H2,0,20.6
+High-fat diet,H2,7,21.1
+High-fat diet,H2,14,22
+High-fat diet,H2,21,23.2
+High-fat diet,H2,28,24.9
+High-fat diet,H2,35,27
+High-fat diet,H3,0,19
+High-fat diet,H3,7,20.8
+High-fat diet,H3,14,21.9
+High-fat diet,H3,21,24.4
+High-fat diet,H3,28,25.1
+High-fat diet,H3,35,25.6
+High-fat diet,H4,0,17.1
+High-fat diet,H4,7,19.3
+High-fat diet,H4,14,20.1
+High-fat diet,H4,21,21.9
+High-fat diet,H4,28,23.2
+High-fat diet,H4,35,24
+High-fat diet,H5,0,19.7
+High-fat diet,H5,7,21.8
+High-fat diet,H5,14,23.2
+High-fat diet,H5,21,24.1
+High-fat diet,H5,28,26.6
+High-fat diet,H5,35,26.4
+High-fat diet,H6,0,22
+High-fat diet,H6,7,23.3
+High-fat diet,H6,14,25.1
+High-fat diet,H6,21,25.3
+High-fat diet,H6,28,26.2
+High-fat diet,H6,35,28.2
