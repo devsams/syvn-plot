@@ -7,9 +7,9 @@ import { driver, type Config, type DestroyReason, type Driver, type DriveStep } 
 
 import "driver.js/dist/driver.css"
 
-const DONE_KEY = "benchplot.tour.completed"
-const AUTO_KEY = "benchplot.tour.autoStarted"
-export const START_TOUR_EVENT = "benchplot:start-tour"
+const DONE_KEY = "syvnplot.tour.completed"
+const AUTO_KEY = "syvnplot.tour.autoStarted"
+export const START_TOUR_EVENT = "syvnplot:start-tour"
 
 export type TourOptions = {
   /** Loads a sample experiment so the graph steps have something to show. */
@@ -44,7 +44,7 @@ function steps(opts: TourOptions, d: () => Driver): DriveStep[] {
   const list: DriveStep[] = [
     {
       popover: {
-        title: "Welcome to BenchPlot",
+        title: "Welcome to Syvn Plot",
         description: "Lab data in, publication-ready graphs and statistics out. This quick tour shows you around — use Next to continue, or close it anytime.",
         side: "bottom",
         align: "center",
@@ -104,7 +104,7 @@ function steps(opts: TourOptions, d: () => Driver): DriveStep[] {
     },
     {
       element: '[data-tour="analysis"]',
-      popover: { title: "The analysis", description: "BenchPlot picks the analysis that fits your columns (● marks the ones that fit). Change it here anytime; column choices live under “Columns & options”.", side: "bottom", align: "start" },
+      popover: { title: "The analysis", description: "Syvn Plot picks the analysis that fits your columns (● marks the ones that fit). Change it here anytime; column choices live under “Columns & options”.", side: "bottom", align: "start" },
       skipMissingElement: true,
     },
     {
@@ -162,7 +162,7 @@ export function runTour(opts: TourOptions): Driver {
     overlayClickBehavior: "close",
     stagePadding: 6,
     stageRadius: 10,
-    popoverClass: "bp-tour",
+    popoverClass: "sp-tour",
     steps: steps(opts, () => instance),
     onDestroyed: (_el, _step, o) => {
       cleanupDriverDom()
@@ -186,7 +186,7 @@ let autoDecision: boolean | undefined
 export function shouldAutoStart(): boolean {
   if (autoDecision !== undefined) return autoDecision
   try {
-    autoDecision = !localStorage.getItem(DONE_KEY) && !sessionStorage.getItem(AUTO_KEY)
+    autoDecision = !localStorage.getItem(DONE_KEY) && !localStorage.getItem("benchplot.tour.completed") /* old app name */ && !sessionStorage.getItem(AUTO_KEY)
     if (autoDecision) sessionStorage.setItem(AUTO_KEY, "1")
   } catch {
     autoDecision = false

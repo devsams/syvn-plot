@@ -4,7 +4,7 @@
  *   POST /api/verify-key  checks a key by listing the provider's models (no generation, no cost)
  *   GET  /api/ai-status   which providers have a server key, and today's free-tier usage
  *
- * Bring-your-own-key: the browser sends x-bp-provider / x-bp-model / x-bp-key on each
+ * Bring-your-own-key: the browser sends x-sp-provider / x-sp-model / x-sp-key on each
  * request. The key is used for that one upstream call only — never stored, never logged.
  * With your own key there is no limit; the server's key has a small daily free tier.
  */
@@ -33,7 +33,7 @@ export function aiRoutes(env: Record<string, string>): Plugin {
   const quota = (req: IncomingMessage) => ({ used: usage.get(clientId(req)) ?? 0, limit: freeLimit })
 
   return {
-    name: "benchplot-ai",
+    name: "syvn-plot-ai",
     configureServer(server) {
       server.middlewares.use("/api/ai-status", (req: IncomingMessage, res: ServerResponse) => {
         send(res, 200, { serverKeys: Object.fromEntries(Object.entries(serverKeys).map(([k, v]) => [k, !!v && freeLimit > 0])), defaults: DEFAULT_MODELS, quota: quota(req) })
@@ -109,9 +109,9 @@ export function aiRoutes(env: Record<string, string>): Plugin {
 }
 
 function byok(req: IncomingMessage): { provider: ProviderId | null; key: string; model: string } {
-  const p = String(req.headers["x-bp-provider"] ?? "").toLowerCase()
+  const p = String(req.headers["x-sp-provider"] ?? "").toLowerCase()
   const provider = p === "gemini" || p === "openai" || p === "anthropic" ? p : null
-  return { provider, key: String(req.headers["x-bp-key"] ?? "").trim(), model: String(req.headers["x-bp-model"] ?? "").trim() }
+  return { provider, key: String(req.headers["x-sp-key"] ?? "").trim(), model: String(req.headers["x-sp-model"] ?? "").trim() }
 }
 
 function send(res: ServerResponse, status: number, body: unknown) {

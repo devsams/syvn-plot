@@ -12,7 +12,7 @@ export async function openaiChat(key: string, model: string, prompt: Prompt, sch
   const r = await fetch(`${BASE}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ model, messages, response_format: { type: "json_schema", json_schema: { name: `benchplot_${schema}`, strict: true, schema: JSON_SCHEMAS[schema] } } }),
+    body: JSON.stringify({ model, messages, response_format: { type: "json_schema", json_schema: { name: `syvnplot_${schema}`, strict: true, schema: JSON_SCHEMAS[schema] } } }),
   })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: any = await r.json().catch(() => ({}))

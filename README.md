@@ -1,4 +1,4 @@
-# BenchPlot
+# Syvn Plot
 
 Lab data in, publication-ready graphs and statistics out. Drop a CSV or Excel file (or pick a sample experiment) and get Prism-style graphs and statistics right away. Everything runs in the browser and makes no AI calls.
 
@@ -56,7 +56,7 @@ The setup panel, the live controls, the Labels/Colors/Text tools and the AI chat
 | Action | What it does | Guardrail |
 |---|---|---|
 | Edit by asking | "log scale, drop Vehicle, violin plot" | A2UI patches validated against the CSV; Undo |
-| 🧭 Which test should I use? | Recommends an analysis and explains why; asks up to two questions if the design is unclear | Only BenchPlot's analyses; nothing changes until you click "Apply recommendation" |
+| 🧭 Which test should I use? | Recommends an analysis and explains why; asks up to two questions if the design is unclear | Only Syvn Plot's analyses; nothing changes until you click "Apply recommendation" |
 | 🧹 Clean up my data | Proposes steps (merge group spellings, units → numbers, drop summary rows, fill merged cells, wide → long, …) | Asks before sending a data sample; local preview; "Apply cleanup" and Undo |
 | 📝 Summarize results | A results paragraph | Uses only numbers the app computed; each number is checked (`src/lib/summaryCheck.ts`) |
 | ✨ Polish legend | Rewrites the legend and methods for a journal | Numbers checked against the original; "Use this text" or back to the generated text |

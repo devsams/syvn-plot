@@ -48,7 +48,7 @@ export function SearchBar({ onPick }: { onPick: (e: SearchEntry) => void }) {
         ref={inputRef}
         value={q}
         placeholder="Search tests, graphs, analyses, samples…"
-        aria-label="Search BenchPlot"
+        aria-label="Search Syvn Plot"
         onFocus={() => setOpen(true)}
         onChange={(e) => {
           setQ(e.target.value)

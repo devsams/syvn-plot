@@ -145,6 +145,6 @@ export function figureText(spec: GraphSpec, result: Result, charts: ChartSpec[],
   const chart = charts[0]
   const methodsCore = (METHODS[spec.analysis]?.(spec, chart) ?? def?.description ?? "").trim()
   const filtered = spec.filters.length ? ` Analysis used ${rowsUsed} of ${rowsTotal} rows after the filters described in the legend were applied.` : ""
-  const methods = `Statistical analysis. ${methodsCore}${filtered} Two-sided P < 0.05 was considered significant. Analyses were performed in BenchPlot.`.replace(/\s+/g, " ")
+  const methods = `Statistical analysis. ${methodsCore}${filtered} Two-sided P < 0.05 was considered significant. Analyses were performed in Syvn Plot.`.replace(/\s+/g, " ")
   return { legend: legendFor(chart, spec, result).replace(/\s+/g, " ").trim(), methods }
 }

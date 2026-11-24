@@ -4,7 +4,7 @@
  */
 import type { ChartSpec, TableSpec } from "./specs"
 
-export const CATALOG_ID = "https://benchplot.local/catalogs/graphs/v1/catalog.json"
+export const CATALOG_ID = "https://syvnplot.local/catalogs/graphs/v1/catalog.json"
 export const SURFACE_ID = "results"
 
 export function surfaceMessages(surfaceId: string, content: { title?: string; headline: string; charts: ChartSpec[]; tables: TableSpec[] }) {

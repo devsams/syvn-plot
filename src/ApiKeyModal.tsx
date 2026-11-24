@@ -79,7 +79,7 @@ export function ApiKeyModal({ settings, status, onSave, onClear, onClose }: { se
         </label>
 
         <div className="privacy">
-          🔒 Your key is stored only in this browser. It's sent with each AI request to the BenchPlot server, which passes it straight to {provider.name} and never saves or logs it. Only column names, types, ranges and 5 example rows are sent — never your whole file.
+          🔒 Your key is stored only in this browser. It's sent with each AI request to the Syvn Plot server, which passes it straight to {provider.name} and never saves or logs it. Only column names, types, ranges and 5 example rows are sent — never your whole file.
         </div>
 
         <div className="modal-foot">

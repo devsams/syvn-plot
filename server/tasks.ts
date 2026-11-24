@@ -1,5 +1,5 @@
 /**
- * The AI tasks BenchPlot offers with a personal key. Each task has its own
+ * The AI tasks Syvn Plot offers with a personal key. Each task has its own
  * instructions and a strict output schema. The AI never computes statistics:
  * it edits settings, recommends analyses, proposes cleanup steps for approval,
  * or writes text from numbers the app already computed.
@@ -27,8 +27,8 @@ export type TaskRequest = {
 /** effort: how much the model may think (Claude) — low keeps simple tasks cheap; the test advisor gets a bit more. */
 export type Prompt = { system: string; user: string; history: ChatTurn[]; effort: "low" | "medium" }
 
-const ADVISE_PROMPT = `You are a friendly biostatistics advisor inside BenchPlot, a GraphPad-Prism-like app for lab researchers.
-Recommend the most appropriate analysis for the researcher's data, chosen ONLY from BenchPlot's analyses:
+const ADVISE_PROMPT = `You are a friendly biostatistics advisor inside Syvn Plot, a GraphPad-Prism-like app for lab researchers.
+Recommend the most appropriate analysis for the researcher's data, chosen ONLY from Syvn Plot's analyses:
 ${catalogText()}
 
 ${APP_RULES}
@@ -36,7 +36,7 @@ ${APP_RULES}
 How to advise:
 - Base it on the data's structure (column types, group columns, repeated/paired measurements, number of groups, continuous vs categorical outcome, time-to-event, dose series) and on what the researcher says.
 - If a key fact is unknown and changes the answer (e.g. are the same animals measured at each time point? are groups independent?), ask at most two short questions in "reply" and return no patches.
-- Otherwise explain your recommendation in 3–6 plain sentences: which analysis and test, why it fits, and one assumption to keep in mind (e.g. small n, normality, independence). Group comparisons offer params "test" (Welch t / ANOVA, Student t / ANOVA, Welch t / Welch ANOVA, Mann–Whitney / Kruskal–Wallis) and "posthoc" (Holm–Šídák, Tukey, Bonferroni, Dunnett (vs control), None); paired data offers "test" (Paired t / RM ANOVA, Wilcoxon / Friedman). Set them with "/graphSpec/params/test" or "/graphSpec/params/posthoc". Mention honestly if a better method exists that BenchPlot doesn't offer (e.g. mixed models).
+- Otherwise explain your recommendation in 3–6 plain sentences: which analysis and test, why it fits, and one assumption to keep in mind (e.g. small n, normality, independence). Group comparisons offer params "test" (Welch t / ANOVA, Student t / ANOVA, Welch t / Welch ANOVA, Mann–Whitney / Kruskal–Wallis) and "posthoc" (Holm–Šídák, Tukey, Bonferroni, Dunnett (vs control), None); paired data offers "test" (Paired t / RM ANOVA, Wilcoxon / Friedman). Set them with "/graphSpec/params/test" or "/graphSpec/params/posthoc". Mention honestly if a better method exists that Syvn Plot doesn't offer (e.g. mixed models).
 - Return patches that switch the graph to your recommendation: "updateDataModel" on "/graphSpec/analysis" and, if needed, "/graphSpec/xColumn", "/graphSpec/yColumns", "/graphSpec/groupBy", "/graphSpec/chartType" (valueJson = JSON). The researcher must click "Apply" before anything changes.
 - Never compute or invent statistics. Use exact column names.`
 
@@ -54,7 +54,7 @@ Rules:
 - Improve flow and concision; follow the requested journal style if one is named (e.g. Nature: bold title sentence then description; Cell: STAR Methods-like wording), otherwise a general biomedical style.
 - Return the new legend in "legend", the new methods in "methods", and one short sentence about what you changed in "reply".`
 
-const CLEANUP_PROMPT = `You prepare messy lab spreadsheets for analysis in BenchPlot. Propose cleanup steps; the researcher reviews them and nothing changes until they click "Apply".
+const CLEANUP_PROMPT = `You prepare messy lab spreadsheets for analysis in Syvn Plot. Propose cleanup steps; the researcher reviews them and nothing changes until they click "Apply".
 Allowed operations (op, column, argsJson):
 - "trim_whitespace": column = a column name or "*" for all text columns; argsJson "{}"
 - "merge_values": unify spellings of the same group, e.g. Ctrl/control/Control → Control; argsJson {"map": {"Ctrl": "Control", "control ": "Control"}} (keys must be existing values)

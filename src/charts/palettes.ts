@@ -4,7 +4,7 @@ import { PALETTE } from "./scale"
 export type Theme = { name: string; note?: string; colors: string[] }
 
 export const THEMES: Theme[] = [
-  { name: "BenchPlot", note: "Default", colors: PALETTE },
+  { name: "Syvn Plot", note: "Default", colors: PALETTE },
   { name: "Okabe–Ito", note: "Colorblind safe", colors: ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000"] },
   { name: "Tol muted", note: "Colorblind safe", colors: ["#332288", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#CC6677", "#882255", "#AA4499"] },
   { name: "Tol high contrast", note: "Colorblind + grayscale safe", colors: ["#004488", "#DDAA33", "#BB5566", "#000000"] },

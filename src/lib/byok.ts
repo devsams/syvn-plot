@@ -13,10 +13,25 @@ export const PROVIDERS: { id: ProviderId; name: string; defaultModel: string; ke
   { id: "anthropic", name: "Anthropic Claude", defaultModel: "claude-haiku-5-5", keyHint: "Starts with “sk-ant-…”", keyUrl: "https://console.anthropic.com/settings/keys" },
 ]
 
-const KEY = "benchplot.byok"
+const KEY = "syvnplot.byok"
+const OLD_KEY = "benchplot.byok" // before the rename to Syvn Plot
+
+/** Moves settings saved under the old app name to the new one (same store, so "remember" is kept). */
+function migrate() {
+  for (const store of [localStorage, sessionStorage]) {
+    const old = store.getItem(OLD_KEY)
+    if (old && !store.getItem(KEY)) store.setItem(KEY, old)
+    store.removeItem(OLD_KEY)
+  }
+}
 const empty: ByokSettings = { provider: "gemini", model: "gemini-3.5-flash-lite", key: "", remember: true }
 
 export function loadByok(): ByokSettings {
+  try {
+    migrate()
+  } catch {
+    /* storage blocked */
+  }
   for (const store of [() => localStorage, () => sessionStorage]) {
     try {
       const raw = store().getItem(KEY)
@@ -53,8 +68,8 @@ export function clearByok() {
 
 /** Headers for one request. The key is only attached when the person has saved their own. */
 export function byokHeaders(s: ByokSettings): Record<string, string> {
-  const h: Record<string, string> = { "x-bp-provider": s.provider, "x-bp-model": s.model }
-  if (s.key) h["x-bp-key"] = s.key
+  const h: Record<string, string> = { "x-sp-provider": s.provider, "x-sp-model": s.model }
+  if (s.key) h["x-sp-key"] = s.key
   return h
 }
 

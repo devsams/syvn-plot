@@ -13,8 +13,8 @@ export type AgentPatch = { kind: "updateDataModel" | "updateComponents"; path: s
 export type AgentReply = { reply: string; patches: AgentPatch[] }
 export type ChatTurn = { role: "user" | "model"; text: string }
 
-/** Facts about how BenchPlot runs tests and lays out charts, shared by the edit and advise prompts so the AI never promises something the app won't do. */
-export const APP_RULES = `How BenchPlot pairs tests with multiple comparisons (group comparisons with 3+ groups):
+/** Facts about how Syvn Plot runs tests and lays out charts, shared by the edit and advise prompts so the AI never promises something the app won't do. */
+export const APP_RULES = `How Syvn Plot pairs tests with multiple comparisons (group comparisons with 3+ groups):
 - "Welch t / ANOVA" (ordinary one-way ANOVA for 3+ groups) and "Student t / ANOVA" use the chosen posthoc: Holm–Šídák, Tukey, Bonferroni, Dunnett (vs control) or None.
 - "Welch t / Welch ANOVA" ALWAYS uses Games–Howell, and "Mann–Whitney / Kruskal–Wallis" ALWAYS uses Dunn's test. The posthoc setting is ignored for these two — never say they run with Tukey, Dunnett, Bonferroni or Holm–Šídák. If the researcher wants Tukey or Dunnett, use "Welch t / ANOVA" or "Student t / ANOVA".
 - With exactly 2 groups there are no multiple comparisons; the t test or Mann–Whitney is the result.
@@ -23,7 +23,7 @@ How charts are laid out:
 - Only describe the layout and data you are given. Don't guess about things not in the setup or column list.
 - The conversation notes in [brackets] say what actually happened after each reply (applied, not applied, undone, failed). Trust them over your own earlier replies.`
 
-export const SYSTEM_PROMPT = `You edit a scientific graph in BenchPlot, a GraphPad-Prism-like app for lab researchers.
+export const SYSTEM_PROMPT = `You edit a scientific graph in Syvn Plot, a GraphPad-Prism-like app for lab researchers.
 The graph lives in an A2UI surface "${SURFACE_ID}". Its canonical description is the data-model object /graphSpec:
 - analysis: which analysis/graph family (ids below)
 - chartType: how groups are drawn — one of the "allowed chart types" given with each request
@@ -33,7 +33,7 @@ The graph lives in an A2UI surface "${SURFACE_ID}". Its canonical description is
 - filters: array of {column, op: "include"|"exclude"|"min"|"max", values?: [strings], value?: number}
     include = keep only these values; exclude = remove these values; min/max = numeric bounds
 - annotations: array of {id, text, fx, fy, size, color, bold} — fx/fy are 0–1 fractions of the canvas (0,0 = top-left)
-- palette: color theme name or null. Themes: BenchPlot, Okabe–Ito, Tol muted, Tol high contrast, Classic, Grayscale, Nature (NPG), Science (AAAS), Lancet, NEJM, JAMA, Cell, Tableau 10, Set 1, Dark 2, Paired, Pastel, Viridis, Magma, Cividis, Blues, Reds, Ocean, Sunset, Earth, Control vs treated
+- palette: color theme name or null. Themes: Syvn Plot, Okabe–Ito, Tol muted, Tol high contrast, Classic, Grayscale, Nature (NPG), Science (AAAS), Lancet, NEJM, JAMA, Cell, Tableau 10, Set 1, Dark 2, Paired, Pastel, Viridis, Magma, Cividis, Blues, Reds, Ocean, Sunset, Earth, Control vs treated
 - errorBars: "sd" | "sem" | "ci"
 - roles / params: advanced per-analysis settings; prefer xColumn / yColumns / groupBy, which are mapped onto roles automatically
 - chartEdits: per-chart extras, keyed "0", "1"…: {renames: {"old text": "new text"}, colors: {"g:<group name>" | "s:<series name>": "#hex"}}

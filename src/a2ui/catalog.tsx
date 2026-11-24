@@ -1,7 +1,7 @@
 /**
  * The locked A2UI catalog for the research-graph surface: four layout/text
  * components from the official v0.9 basic catalog (Column, Row, Text, Card)
- * plus BenchPlot components — Chart, ChartGrid, StatsTable and the live
+ * plus Syvn Plot components — Chart, ChartGrid, StatsTable and the live
  * controls (ChartTypeControl, ScaleControl, FilterControl, ExportButton).
  * Nothing else can be rendered, and incoming messages are validated against
  * LOCKED_COMPONENTS before they reach the surface.
@@ -125,5 +125,5 @@ export const graphsCatalog = (basicCatalog as any).derive({
 // Keep the runtime catalog and the validator's allow-list in step.
 if (import.meta.env.DEV) {
   const names = [...BASIC_ALLOWED, "Chart", "StatsTable", "ChartGrid", "ChartTypeControl", "ScaleControl", "FilterControl", "ExportButton", "FigureText", "TestControl"].sort().join()
-  if (names !== [...LOCKED_COMPONENTS].sort().join()) console.warn("BenchPlot: catalog and LOCKED_COMPONENTS differ")
+  if (names !== [...LOCKED_COMPONENTS].sort().join()) console.warn("Syvn Plot: catalog and LOCKED_COMPONENTS differ")
 }

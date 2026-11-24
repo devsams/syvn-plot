@@ -77,10 +77,10 @@ export function ChartCard({ spec, index }: { spec: ChartSpec; index?: number }) 
 
   const onPointerDown = (e: ReactPointerEvent) => {
     if (panel !== "text") return
-    const t = (e.target as Element).closest("[data-bp-ann]") as SVGTextElement | null
+    const t = (e.target as Element).closest("[data-sp-ann]") as SVGTextElement | null
     if (!t) return
     e.preventDefault()
-    drag.current = { id: t.getAttribute("data-bp-ann")!, startX: e.clientX, startY: e.clientY, moved: false }
+    drag.current = { id: t.getAttribute("data-sp-ann")!, startX: e.clientX, startY: e.clientY, moved: false }
     try {
       ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
     } catch {
@@ -91,7 +91,7 @@ export function ChartCard({ spec, index }: { spec: ChartSpec; index?: number }) 
     const d = drag.current
     if (!d) return
     if (Math.abs(e.clientX - d.startX) + Math.abs(e.clientY - d.startY) > 3) d.moved = true
-    const el = svgRef.current?.querySelector(`[data-bp-ann="${d.id}"]`)
+    const el = svgRef.current?.querySelector(`[data-sp-ann="${d.id}"]`)
     if (el && d.moved) {
       const p = toSvgPoint(e.clientX, e.clientY)
       el.setAttribute("x", String(p.x))
@@ -102,7 +102,7 @@ export function ChartCard({ spec, index }: { spec: ChartSpec; index?: number }) 
     const d = drag.current
     drag.current = null
     if (!d) return
-    const el = svgRef.current?.querySelector(`[data-bp-ann="${d.id}"]`) as SVGTextElement | null
+    const el = svgRef.current?.querySelector(`[data-sp-ann="${d.id}"]`) as SVGTextElement | null
     if (!d.moved) {
       if (el) openInline(el, d.id)
       return
@@ -113,7 +113,7 @@ export function ChartCard({ spec, index }: { spec: ChartSpec; index?: number }) 
   const onClick = (e: React.MouseEvent) => {
     if (panel !== "text" || inline) return
     const t = (e.target as Element).closest("text") as SVGTextElement | null
-    if (!t || t.closest("[data-bp-ann]")) return
+    if (!t || t.closest("[data-sp-ann]")) return
     openInline(t)
   }
 

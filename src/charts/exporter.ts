@@ -35,10 +35,10 @@ export function buildSvg(spec: ChartSpec, preset: SizePreset) {
   document.body.appendChild(host)
   decorateSvg(svg, spec.decor, size)
   // Clean export: drop hidden originals and helper attributes.
-  svg.querySelectorAll("[data-bp-hidden]").forEach((n) => n.remove())
-  svg.querySelectorAll("[data-bp-clone],[data-bp-ann]").forEach((n) => {
-    n.removeAttribute("data-bp-clone")
-    n.removeAttribute("data-bp-ann")
+  svg.querySelectorAll("[data-sp-hidden]").forEach((n) => n.remove())
+  svg.querySelectorAll("[data-sp-clone],[data-sp-ann]").forEach((n) => {
+    n.removeAttribute("data-sp-clone")
+    n.removeAttribute("data-sp-ann")
     ;(n as SVGElement).style.cursor = ""
   })
   svg.removeAttribute("class")
@@ -129,7 +129,7 @@ async function savePdf(svg: SVGSVGElement, preset: SizePreset, name: string) {
   svg.querySelectorAll("[font-weight]").forEach((n) => n.setAttribute("font-weight", Number(n.getAttribute("font-weight")) >= 600 || n.getAttribute("font-weight") === "bold" ? "bold" : "normal"))
   svg.setAttribute("font-family", "Arimo")
   await pdf.svg(svg, { x: 0, y: 0, width: w, height: h })
-  pdf.setProperties({ title: name.replace(/\.pdf$/, ""), creator: "BenchPlot" })
+  pdf.setProperties({ title: name.replace(/\.pdf$/, ""), creator: "Syvn Plot" })
   pdf.save(name)
 }
 

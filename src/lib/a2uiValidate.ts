@@ -50,7 +50,7 @@ export function validateAgentMessages(messages: unknown[], ctx: { spec: GraphSpe
     const where = messages.length > 1 ? ` (change ${n + 1})` : ""
     const parsed = MessageSchema.safeParse(raw)
     if (!parsed.success) {
-      problems.push(`The AI sent an edit BenchPlot couldn't understand${where}, so it was ignored.`)
+      problems.push(`The AI sent an edit Syvn Plot couldn't understand${where}, so it was ignored.`)
       return
     }
     const m = parsed.data

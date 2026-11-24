@@ -51,7 +51,7 @@ export async function askAgent(args: { question: string; dataset: Dataset; spec:
       body: JSON.stringify({ question: args.question, dataset: describeDataset(args.dataset), graphSpec: args.spec, chartTypes: chartTypesFor(args.spec.analysis), components: args.components, history: args.history.slice(-8) }),
     })
   } catch {
-    throw new AgentError("network", "Couldn't reach the BenchPlot server. Is it still running?")
+    throw new AgentError("network", "Couldn't reach the Syvn Plot server. Is it still running?")
   }
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new AgentError(body.code ?? "error", body.error ?? `The AI request failed (${res.status}).`)
@@ -64,7 +64,7 @@ export async function verifyKey(byok: ByokSettings): Promise<{ ok: boolean; mess
     const body = await res.json()
     return { ok: !!body.ok, message: body.ok ? body.message : body.error }
   } catch {
-    return { ok: false, message: "Couldn't reach the BenchPlot server to check the key." }
+    return { ok: false, message: "Couldn't reach the Syvn Plot server to check the key." }
   }
 }
 
@@ -85,7 +85,7 @@ export async function askAi(task: AiTaskId, byok: ByokSettings, payload: Record<
   try {
     res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json", ...byokHeaders(byok) }, body: JSON.stringify({ task, ...payload }) })
   } catch {
-    throw new AgentError("network", "Couldn't reach the BenchPlot server. Is it still running?")
+    throw new AgentError("network", "Couldn't reach the Syvn Plot server. Is it still running?")
   }
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw new AgentError(body.code ?? "error", body.error ?? `The AI request failed (${res.status}).`)

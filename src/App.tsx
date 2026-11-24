@@ -252,8 +252,8 @@ export default function App() {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">BP</span>
-          <span className="brand-name">BenchPlot</span>
+          <span className="brand-mark">SP</span>
+          <span className="brand-name">Syvn Plot</span>
           <button type="button" className="brand-search" aria-label="Search" onClick={openSearch}>
             <Icon name="search" />
           </button>
@@ -316,7 +316,7 @@ export default function App() {
         <div className="page-title">
           <h1>{dataset ? title : "Make a graph"}</h1>
           <p className="crumb">
-            BenchPlot <span aria-hidden>·</span> {dataset && def ? def.label : dataset ? "Check your columns" : "Upload a CSV or Excel sheet, or start from a sample experiment"}
+            Syvn Plot <span aria-hidden>·</span> {dataset && def ? def.label : dataset ? "Check your columns" : "Upload a CSV or Excel sheet, or start from a sample experiment"}
           </p>
         </div>
         <SearchBar onPick={(e) => void onSearchPick(e)} />

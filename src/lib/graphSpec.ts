@@ -171,7 +171,7 @@ export function validateGraphSpec(spec: unknown, ds: Dataset): string[] {
   const missing = (n: string, where: string) => problems.push(`There's no column called “${n}” in ${ds.fileName} (used for ${where}). Columns in this file: ${list(names)}.`)
 
   const def = analysisById(s.analysis)
-  if (!def) problems.push(`BenchPlot doesn't have a graph type called “${s.analysis}”. Options include: ${list(ANALYSES.map((a) => a.id), 12)}.`)
+  if (!def) problems.push(`Syvn Plot doesn't have a graph type called “${s.analysis}”. Options include: ${list(ANALYSES.map((a) => a.id), 12)}.`)
   if (s.xColumn && !col(s.xColumn)) missing(s.xColumn, "the X axis")
   for (const y of s.yColumns) if (!col(y)) missing(y, "the Y axis")
   if (s.groupBy && !col(s.groupBy)) missing(s.groupBy, "grouping")
