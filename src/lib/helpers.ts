@@ -3,6 +3,7 @@ import type { ColumnKindName } from "./analysis-defs"
 import { numbersOf, type Column, type Dataset } from "./parse"
 import type { ChartSpec, ColumnStyle, ErrorKind, Group, TableSpec } from "./specs"
 import { fmtP, holmSidak, oneWayAnova, summarize, welchT, type Comparison, type TestResult } from "./stats"
+import { bonferroni, dunn, dunnett, gamesHowell, grubbs, kruskalWallis, mannWhitney, shapiroWilk, studentT, tukeyHSD, welchAnova } from "./tests"
 
 export type Roles = Record<string, string[]>
 export type Params = Record<string, string>
@@ -100,15 +101,67 @@ export const comparisonsTable = (title: string, groups: Group[], comps: Comparis
 })
 
 /** Column graph + test + tables for a set of groups. */
-export function compareGroups(title: string, yLabel: string, groups: Group[], opts: RunOptions, out: Result) {
+export type CompareOptions = { test?: string; posthoc?: string; control?: string }
+
+/** Column graph + chosen test + multiple comparisons + normality/outlier checks for a set of groups. */
+export function compareGroups(title: string, yLabel: string, groups: Group[], opts: RunOptions, out: Result, choice: CompareOptions = {}) {
   const filled = groups.filter((g) => g.values.length > 0)
-  const test = filled.length === 2 ? welchT(filled[0].values, filled[1].values) : filled.length > 2 ? oneWayAnova(filled.map((g) => g.values)) : null
-  const comparisons = filled.length > 2 ? holmSidak(groups.map((g) => g.values)) : []
-  out.charts.push({ kind: "column", title, yLabel, style: opts.style, error: opts.error, groups, test, comparisons })
+  const kind = choice.test ?? "Welch t / ANOVA"
+  const nonpar = kind.startsWith("Mann")
+  const welchAnovaKind = kind === "Welch t / Welch ANOVA"
+  const values = filled.map((g) => g.values)
+  let test: TestResult | null = null
+  if (filled.length === 2) test = nonpar ? mannWhitney(values[0], values[1]) : kind.startsWith("Student") ? studentT(values[0], values[1]) : welchT(values[0], values[1])
+  else if (filled.length > 2) test = nonpar ? kruskalWallis(values) : welchAnovaKind ? welchAnova(values) : oneWayAnova(values)
+
+  let comparisons: Comparison[] = []
+  let method = ""
+  if (filled.length > 2) {
+    const all = groups.map((g) => g.values)
+    const post = choice.posthoc ?? "Holm–Šídák"
+    if (nonpar) [comparisons, method] = [dunn(all), "Dunn's"]
+    else if (welchAnovaKind) [comparisons, method] = [gamesHowell(all), "Games–Howell"]
+    else if (post === "Tukey") [comparisons, method] = [tukeyHSD(all), "Tukey"]
+    else if (post === "Bonferroni") [comparisons, method] = [bonferroni(all), "Bonferroni"]
+    else if (post.startsWith("Dunnett")) {
+      const ci = Math.max(0, groups.findIndex((g) => g.name === choice.control))
+      ;[comparisons, method] = [dunnett(all, ci), `Dunnett (vs ${groups[ci]?.name})`]
+    } else if (post !== "None") [comparisons, method] = [holmSidak(all), "Holm–Šídák"]
+  }
+
+  out.charts.push({ kind: "column", title, yLabel, style: opts.style, error: opts.error, groups, test, comparisons, comparisonMethod: method || undefined })
   out.tables.push(descriptiveTable(`${title} — descriptive statistics`, groups))
   if (test) out.tables.push(testsTable(`${title} — test`, [test]))
-  if (comparisons.length) out.tables.push(comparisonsTable(`${title} — Holm–Šídák multiple comparisons`, groups, comparisons))
+  if (comparisons.length) out.tables.push(comparisonsTable(`${title} — ${method} multiple comparisons`, groups, comparisons))
+
+  const checks = assumptionTable(`${title} — normality & outliers`, groups)
+  out.tables.push(checks.table)
+  if (!nonpar && checks.nonNormal.length) out.headline += ` · ${checks.nonNormal.join(", ")} may not be normally distributed (Shapiro–Wilk P < 0.05) — consider the Mann–Whitney / Kruskal–Wallis option`
+  if (checks.outliers.length) out.headline += ` · possible outlier${checks.outliers.length > 1 ? "s" : ""} (Grubbs): ${checks.outliers.join(", ")}`
 }
+
+/** Shapiro–Wilk normality and Grubbs outlier check per group (α = 0.05). */
+export function assumptionTable(title: string, groups: Group[]) {
+  const sw = groups.map((g) => shapiroWilk(g.values))
+  const gr = groups.map((g) => grubbs(g.values))
+  const nonNormal = groups.filter((_, i) => sw[i] && sw[i]!.p < 0.05).map((g) => g.name)
+  const outliers = groups.flatMap((g, i) => (gr[i] && gr[i]!.p < 0.05 ? [`${fmtNum(gr[i]!.value)} in ${g.name}`] : []))
+  const table: TableSpec = {
+    title,
+    columns: ["", ...groups.map((g) => g.name)],
+    rows: [
+      ["Shapiro–Wilk W", ...sw.map((r) => r?.W ?? null)],
+      ["Normality P value", ...sw.map((r) => (r ? fmtP(r.p) : "n too small"))],
+      ["Passed normality (α = 0.05)?", ...sw.map((r) => (r ? (r.p >= 0.05 ? "Yes" : "No") : "–"))],
+      ["Most extreme value (Grubbs)", ...gr.map((r) => r?.value ?? null)],
+      ["Grubbs P value", ...gr.map((r) => (r ? fmtP(r.p) : "n too small"))],
+      ["Significant outlier (α = 0.05)?", ...gr.map((r) => (r ? (r.p < 0.05 ? "Yes" : "No") : "–"))],
+    ],
+  }
+  return { table, nonNormal, outliers }
+}
+
+const fmtNum = (v: number) => Number(v.toPrecision(5)).toString()
 
 
 export const PALETTE_FOR = (i: number) => ["#2f6fdb", "#e0533d", "#2a9d6f", "#8a5cd1", "#e39b22", "#1fa3b5", "#c94c8a", "#6b7a1f", "#7a4a2a", "#4a5568", "#d1495b", "#3d8bd9"][((i % 12) + 12) % 12]

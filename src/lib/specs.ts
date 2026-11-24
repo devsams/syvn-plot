@@ -16,6 +16,8 @@ export type ColumnChartSpec = {
   groups: Group[]
   test: TestResult | null
   comparisons?: Comparison[]
+  /** Name of the multiple-comparisons procedure (Holm–Šídák, Tukey, Dunnett, Dunn's, Games–Howell…). */
+  comparisonMethod?: string
   /** Draw a line joining the i-th value of every group (before–after). */
   paired?: boolean
   logY?: boolean

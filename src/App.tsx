@@ -309,6 +309,16 @@ export default function App() {
                 .map((p) => {
                   const src = p.levelsOf ? dataset.columns.find((c) => c.name === spec.roles[p.levelsOf!]?.[0]) : undefined
                   const choices = p.values ?? (p.columnsOf ? (spec.roles[p.columnsOf] ?? []) : src ? levelsOf(src) : [])
+                  const auto = p.key === "posthoc" ? ((spec.params.test ?? "").startsWith("Mann") ? "Dunn's (automatic)" : spec.params.test === "Welch t / Welch ANOVA" ? "Games–Howell (automatic)" : null) : null
+                  if (auto)
+                    return (
+                      <label key={p.key} className="field">
+                        <span>{p.label}</span>
+                        <select value={auto} disabled>
+                          <option>{auto}</option>
+                        </select>
+                      </label>
+                    )
                   return (
                     <label key={p.key} className="field">
                       <span>{p.label}</span>

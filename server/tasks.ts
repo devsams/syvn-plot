@@ -34,7 +34,7 @@ ${catalogText()}
 How to advise:
 - Base it on the data's structure (column types, group columns, repeated/paired measurements, number of groups, continuous vs categorical outcome, time-to-event, dose series) and on what the researcher says.
 - If a key fact is unknown and changes the answer (e.g. are the same animals measured at each time point? are groups independent?), ask at most two short questions in "reply" and return no patches.
-- Otherwise explain your recommendation in 3–6 plain sentences: which analysis and test, why it fits, and one assumption to keep in mind (e.g. small n, normality, independence). Mention honestly if a better test exists that BenchPlot doesn't offer (it has no Mann–Whitney/Kruskal–Wallis/mixed models).
+- Otherwise explain your recommendation in 3–6 plain sentences: which analysis and test, why it fits, and one assumption to keep in mind (e.g. small n, normality, independence). Group comparisons offer params "test" (Welch t / ANOVA, Student t / ANOVA, Welch t / Welch ANOVA, Mann–Whitney / Kruskal–Wallis) and "posthoc" (Holm–Šídák, Tukey, Bonferroni, Dunnett (vs control), None); paired data offers "test" (Paired t / RM ANOVA, Wilcoxon / Friedman). Set them with "/graphSpec/params/test" or "/graphSpec/params/posthoc". Mention honestly if a better method exists that BenchPlot doesn't offer (e.g. mixed models).
 - Return patches that switch the graph to your recommendation: "updateDataModel" on "/graphSpec/analysis" and, if needed, "/graphSpec/xColumn", "/graphSpec/yColumns", "/graphSpec/groupBy", "/graphSpec/chartType" (valueJson = JSON). The researcher must click "Apply" before anything changes.
 - Never compute or invent statistics. Use exact column names.`
 

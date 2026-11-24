@@ -31,12 +31,13 @@ import {
 
 import {
   RE, cols, byName, role, roleAll, str, levelsOf, isMonotonic, isInteger, names, errHalf, errLabel, replicateSets,
-  descriptiveTable, testsTable, compareGroups, need, PALETTE_FOR, normalizeGroups,
+  descriptiveTable, testsTable, compareGroups, assumptionTable, need, PALETTE_FOR, normalizeGroups,
   type Roles, type Params, type RunOptions, type Result,
 } from "./helpers"
 export { levelsOf, replicateSets, descriptiveTable } from "./helpers"
 export type { Roles, Params, RunOptions, Result } from "./helpers"
 import { EXTRA_DETECT, EXTRA_RUN } from "./analyses-extra"
+import { friedman, wilcoxonSignedRank } from "./tests"
 export type Detection = { id: AnalysisId; score: number; roles: Roles; params: Params }
 
 // --- detection ---------------------------------------------------------------
@@ -259,7 +260,7 @@ const RUN: Record<AnalysisId, Runner> = {
     need(vs.length, "Pick at least one numeric column.")
     const norm = normalizeGroups(vs.map((c) => ({ name: c.name, values: numbersOf(c) })), params.normalize, params.control)
     const out: Result = { headline: `${vs.length} group${vs.length > 1 ? "s" : ""} (each column = one group)${norm.label ? ` · ${norm.label}` : ""}`, charts: [], tables: [] }
-    compareGroups(vs.length === 1 ? vs[0].name : "Column comparison", norm.label || (vs.length === 1 ? vs[0].name : "Value"), norm.groups, opts, out)
+    compareGroups(vs.length === 1 ? vs[0].name : "Column comparison", norm.label || (vs.length === 1 ? vs[0].name : "Value"), norm.groups, opts, out, params)
     return out
   },
 
@@ -283,17 +284,18 @@ const RUN: Record<AnalysisId, Runner> = {
       const raw = lv.map((level) => ({ name: level, values: m.values.flatMap((_, i) => { const v = str(g!.values[i]) === level ? value(i) : null; return v === null ? [] : [v] }) }))
       const norm = normalizeGroups(raw, params.normalize, params.control)
       const name = div ? `${m.name} / ${div.name}` : m.name
-      compareGroups(name, norm.label ? `${name} (${norm.label})` : name, norm.groups, opts, out)
+      compareGroups(name, norm.label ? `${name} (${norm.label})` : name, norm.groups, opts, out, params)
     }
     return out
   },
 
-  paired: (ds, roles, _p, opts) => {
+  paired: (ds, roles, params, opts) => {
     const vs = roleAll(ds, roles, "values")
     need(vs.length >= 2, "Pick at least two columns measured on the same subjects.")
     const complete = Array.from({ length: ds.rowCount }, (_, i) => i).filter((i) => vs.every((c) => typeof c.values[i] === "number"))
     const groups = vs.map((c) => ({ name: c.name, values: complete.map((i) => c.values[i] as number) }))
-    const test = vs.length === 2 ? pairedT(groups[0].values, groups[1].values) : rmAnova(groups.map((g) => g.values))
+    const nonpar = (params.test ?? "").startsWith("Wilcoxon")
+    const test = vs.length === 2 ? (nonpar ? wilcoxonSignedRank(groups[0].values, groups[1].values) : pairedT(groups[0].values, groups[1].values)) : nonpar ? friedman(groups.map((g) => g.values)) : rmAnova(groups.map((g) => g.values))
     const out: Result = { headline: `${complete.length} subjects with complete data · ${vs.length} paired measurements`, charts: [], tables: [] }
     out.charts.push({ kind: "column", title: "Before–after", yLabel: "Value", style: opts.style === "bar" ? "scatter" : opts.style, error: opts.error, groups, test, paired: true })
     if (vs.length === 2) {
@@ -302,6 +304,12 @@ const RUN: Record<AnalysisId, Runner> = {
     }
     out.tables.push(descriptiveTable("Descriptive statistics", groups))
     if (test) out.tables.push(testsTable("Test", [test]))
+    if (vs.length === 2) {
+      // For paired data the assumption that matters is normality of the differences.
+      const checks = assumptionTable("Normality of differences & outliers", [{ name: `${vs[1].name} − ${vs[0].name}`, values: groups[0].values.map((v, i) => groups[1].values[i] - v) }])
+      out.tables.push(checks.table)
+      if (!nonpar && checks.nonNormal.length) out.headline += " · the differences may not be normally distributed (Shapiro–Wilk P < 0.05) — consider the Wilcoxon option"
+    }
     return out
   },
 

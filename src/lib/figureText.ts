@@ -33,7 +33,7 @@ function testSentence(c: ColumnChartSpec) {
   if (!c.test) return ""
   const p = c.test.p < 0.0001 ? "P < 0.0001" : `P = ${fmtP(c.test.p)}`
   const sig = c.comparisons?.filter((x) => x.p < 0.05).length ?? 0
-  const comp = c.comparisons?.length ? ` Holm–Šídák multiple comparisons: ${sig} of ${c.comparisons.length} pairs differ (brackets).` : ""
+  const comp = c.comparisons?.length ? ` ${c.comparisonMethod ?? "Holm–Šídák"} multiple comparisons: ${sig} of ${c.comparisons.length} ${c.comparisonMethod?.startsWith("Dunnett") ? "comparisons with the control" : "pairs"} differ (brackets).` : ""
   return `${c.test.name}: ${c.test.statistic}, ${p}.${comp}`
 }
 
@@ -79,7 +79,10 @@ function legendFor(chart: ChartSpec | undefined, spec: GraphSpec, result: Result
 const METHODS: Record<string, (spec: GraphSpec, chart: ChartSpec | undefined) => string> = {
   column: (s, c) => groupMethods(s, c),
   one_factor: (s, c) => groupMethods(s, c),
-  paired: (s) => `Measurements from the same subjects were compared with a paired t test (two time points) or repeated-measures one-way ANOVA (three or more), using subjects with complete data. Data are shown as individual values with ${errName(s.errorBars)}.`,
+  paired: (s) =>
+    (s.params.test ?? "").startsWith("Wilcoxon")
+      ? "Measurements from the same subjects were compared with the Wilcoxon matched-pairs signed-rank test (two time points; exact P for n ≤ 30 without ties) or the Friedman test (three or more), using subjects with complete data."
+      : `Measurements from the same subjects were compared with a paired t test (two time points) or repeated-measures one-way ANOVA (three or more), using subjects with complete data; normality of the paired differences was checked with the Shapiro–Wilk test. Data are shown as individual values with ${errName(s.errorBars)}.`,
   two_way: () => "Effects of the two factors and their interaction were tested by two-way ANOVA with type III sums of squares. Bars show cell means.",
   summary_bars: (s) => `Summary data (mean, ${s.params.errorType === "sem" ? "SEM" : "SD"} and n) were plotted as reported; where two groups were present they were compared with Welch's t test computed from the summary statistics.`,
   xy: (s) => `Replicate columns were averaged at each X value and shown as mean ± ${errName(s.errorBars)}.${s.params.normalize && s.params.normalize !== "none" ? ` Traces were normalized as ${s.params.normalize}.` : ""}${s.params.fit === "linear" ? " Lines are least-squares linear regressions." : s.params.fit === "initial rate" ? " Initial rates are least-squares slopes over the first 25% of X values." : ""}`,
@@ -116,8 +119,25 @@ const METHODS: Record<string, (spec: GraphSpec, chart: ChartSpec | undefined) =>
 function groupMethods(s: GraphSpec, c: ChartSpec | undefined) {
   const norm = [s.roles.normalizer?.[0] ? `values were divided by ${s.roles.normalizer[0]}` : "", s.params.normalize && s.params.normalize !== "none" ? `expressed as ${s.params.normalize}${s.params.control ? ` (${s.params.control})` : ""}` : ""].filter(Boolean).join(" and ")
   const groups = c?.kind === "column" ? c.groups.filter((g) => g.values.length).length : 0
-  const test = groups === 2 ? "Two groups were compared with Welch's unpaired t test." : groups > 2 ? "Groups were compared by ordinary one-way ANOVA followed by Holm–Šídák multiple comparisons using the pooled variance." : ""
-  return `${norm ? `Before analysis, ${norm}. ` : ""}${test}`
+  const kind = s.params.test ?? "Welch t / ANOVA"
+  const method = c?.kind === "column" ? c.comparisonMethod : undefined
+  const post: Record<string, string> = {
+    "Holm–Šídák": "Holm–Šídák multiple comparisons using the pooled variance",
+    Tukey: "Tukey's honestly significant difference test",
+    Bonferroni: "Bonferroni-corrected pairwise t tests using the pooled variance",
+    "Dunn's": "Dunn's multiple comparisons (Bonferroni-adjusted)",
+    "Games–Howell": "Games–Howell multiple comparisons (unequal variances)",
+  }
+  const postText = method ? post[method] ?? (method.startsWith("Dunnett") ? `Dunnett's test comparing each group with ${method.replace(/^Dunnett \(vs (.*)\)$/, "$1")}` : method) : ""
+  let test = ""
+  if (groups === 2)
+    test = kind.startsWith("Mann") ? "Two groups were compared with the two-sided Mann–Whitney test (exact P for samples ≤ 25 without ties)." : kind.startsWith("Student") ? "Two groups were compared with Student's unpaired t test (equal variances assumed)." : "Two groups were compared with Welch's unpaired t test (unequal variances allowed)."
+  else if (groups > 2) {
+    const omnibus = kind.startsWith("Mann") ? "the Kruskal–Wallis test" : kind === "Welch t / Welch ANOVA" ? "Welch's ANOVA" : "ordinary one-way ANOVA"
+    test = `Groups were compared by ${omnibus}${postText ? `, followed by ${postText}` : ""}.`
+  }
+  const checks = kind.startsWith("Mann") ? "" : " Normality was assessed with the Shapiro–Wilk test and outliers with Grubbs' test (α = 0.05)."
+  return `${norm ? `Before analysis, ${norm}. ` : ""}${test}${checks}`
 }
 
 export function figureText(spec: GraphSpec, result: Result, charts: ChartSpec[], rowsUsed: number, rowsTotal: number): FigureText {

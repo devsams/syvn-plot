@@ -187,6 +187,10 @@ export function validateGraphSpec(spec: unknown, ds: Dataset): string[] {
         }
       }
     }
+    for (const pd of def.params ?? []) {
+      const v = s.params[pd.key]
+      if (pd.values && v !== undefined && v !== "" && !pd.values.includes(v)) problems.push(`“${v}” isn't an option for “${pd.label}”. Options: ${pd.values.join(", ")}.`)
+    }
     if (!chartTypesFor(s.analysis).includes(s.chartType)) problems.push(`A ${def.label} graph can be drawn as: ${chartTypesFor(s.analysis).join(", ")} — not “${s.chartType}”.`)
   }
 
