@@ -77,3 +77,38 @@ export function unverifiedNumbers(text: string, source: unknown): string[] {
   }
   return [...bad]
 }
+
+/** Group / series names drawn on the charts (every string `name` field). */
+export function chartNames(charts: unknown): string[] {
+  const out = new Set<string>()
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) v.forEach(walk)
+    else if (v && typeof v === "object") {
+      for (const [k, x] of Object.entries(v)) {
+        if (k === "name" && typeof x === "string" && x.trim()) out.add(x)
+        else walk(x)
+      }
+    }
+  }
+  walk(charts)
+  return [...out]
+}
+
+/**
+ * Names must survive a rewrite exactly. A name that only changed in spacing or
+ * case ("Drug A 10mg" → "drug A 10 mg") is put back; one that vanished is reported.
+ */
+export function restoreNames(original: string, rewritten: string, names: string[]): { text: string; missing: string[] } {
+  let text = rewritten
+  const missing: string[] = []
+  for (const name of [...names].sort((a, b) => b.length - a.length)) {
+    if (!original.includes(name) || text.includes(name)) continue
+    const loose = new RegExp(
+      [...name.replace(/\s+/g, "")].map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s*"),
+      "gi",
+    )
+    if (loose.test(text)) text = text.replace(loose, name)
+    else missing.push(name)
+  }
+  return { text, missing }
+}

@@ -5,7 +5,7 @@
  * or writes text from numbers the app already computed.
  */
 import { catalogText } from "../src/lib/analysis-defs"
-import { SYSTEM_PROMPT as EDIT_PROMPT, type ChatTurn } from "./agent"
+import { APP_RULES, SYSTEM_PROMPT as EDIT_PROMPT, type ChatTurn } from "./agent"
 
 export type TaskId = "edit" | "advise" | "summarize" | "polish" | "cleanup"
 export type SchemaId = "patch" | "text" | "cleanup"
@@ -31,6 +31,8 @@ const ADVISE_PROMPT = `You are a friendly biostatistics advisor inside BenchPlot
 Recommend the most appropriate analysis for the researcher's data, chosen ONLY from BenchPlot's analyses:
 ${catalogText()}
 
+${APP_RULES}
+
 How to advise:
 - Base it on the data's structure (column types, group columns, repeated/paired measurements, number of groups, continuous vs categorical outcome, time-to-event, dose series) and on what the researcher says.
 - If a key fact is unknown and changes the answer (e.g. are the same animals measured at each time point? are groups independent?), ask at most two short questions in "reply" and return no patches.
@@ -48,7 +50,7 @@ Rules:
 
 const POLISH_PROMPT = `You edit a figure legend and a statistical-methods paragraph for publication.
 Rules:
-- Keep every number, n, test name, P value, group name and threshold exactly as given. Do not add results, claims or analyses that aren't in the text.
+- Keep every number, n, test name, P value, group name and threshold exactly as given. Copy group names, column names and units character for character (e.g. keep "Drug A 10mg" — don't add spaces, change capitals or reformat units). Do not add results, claims or analyses that aren't in the text.
 - Improve flow and concision; follow the requested journal style if one is named (e.g. Nature: bold title sentence then description; Cell: STAR Methods-like wording), otherwise a general biomedical style.
 - Return the new legend in "legend", the new methods in "methods", and one short sentence about what you changed in "reply".`
 

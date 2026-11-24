@@ -16,7 +16,8 @@ const FALLBACK_MODELS = new Set(["claude-fable-5-2", "claude-fable-5-1", "claude
 /** Maps SDK errors (typed classes, most specific first) to plain-language ProviderErrors. */
 function mapError(e: unknown): never {
   if (e instanceof ProviderError) throw e
-  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) throw httpError("anthropic", 401)
+  if (e instanceof Anthropic.AuthenticationError) throw httpError("anthropic", 401)
+  if (e instanceof Anthropic.PermissionDeniedError) throw httpError("anthropic", 403)
   if (e instanceof Anthropic.NotFoundError) throw httpError("anthropic", 404, e.message)
   if (e instanceof Anthropic.RateLimitError) throw httpError("anthropic", 429)
   if (e instanceof Anthropic.APIConnectionError) throw new ProviderError("provider_error", "Couldn't reach Anthropic. Check your internet connection and try again.")

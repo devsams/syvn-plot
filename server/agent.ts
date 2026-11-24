@@ -13,6 +13,16 @@ export type AgentPatch = { kind: "updateDataModel" | "updateComponents"; path: s
 export type AgentReply = { reply: string; patches: AgentPatch[] }
 export type ChatTurn = { role: "user" | "model"; text: string }
 
+/** Facts about how BenchPlot runs tests and lays out charts, shared by the edit and advise prompts so the AI never promises something the app won't do. */
+export const APP_RULES = `How BenchPlot pairs tests with multiple comparisons (group comparisons with 3+ groups):
+- "Welch t / ANOVA" (ordinary one-way ANOVA for 3+ groups) and "Student t / ANOVA" use the chosen posthoc: Holm–Šídák, Tukey, Bonferroni, Dunnett (vs control) or None.
+- "Welch t / Welch ANOVA" ALWAYS uses Games–Howell, and "Mann–Whitney / Kruskal–Wallis" ALWAYS uses Dunn's test. The posthoc setting is ignored for these two — never say they run with Tukey, Dunnett, Bonferroni or Holm–Šídák. If the researcher wants Tukey or Dunnett, use "Welch t / ANOVA" or "Student t / ANOVA".
+- With exactly 2 groups there are no multiple comparisons; the t test or Mann–Whitney is the result.
+How charts are laid out:
+- Each column in yColumns is drawn as its OWN chart with its own Y axis. Settings such as chartType, yScale and errorBars apply to every chart, but the measurements never share an axis.
+- Only describe the layout and data you are given. Don't guess about things not in the setup or column list.
+- The conversation notes in [brackets] say what actually happened after each reply (applied, not applied, undone, failed). Trust them over your own earlier replies.`
+
 export const SYSTEM_PROMPT = `You edit a scientific graph in BenchPlot, a GraphPad-Prism-like app for lab researchers.
 The graph lives in an A2UI surface "${SURFACE_ID}". Its canonical description is the data-model object /graphSpec:
 - analysis: which analysis/graph family (ids below)
@@ -30,6 +40,8 @@ The graph lives in an A2UI surface "${SURFACE_ID}". Its canonical description is
 
 Analyses (id: description. Roles):
 ${catalogText()}
+
+${APP_RULES}
 
 How to answer:
 - Return a short plain-language "reply" (1–2 sentences) saying what you changed, or why you couldn't.
@@ -75,7 +87,13 @@ export type ProviderId = keyof typeof PROVIDER_NAMES
 
 export function httpError(provider: ProviderId, status: number, detail?: string): ProviderError {
   const name = PROVIDER_NAMES[provider]
-  if (status === 401 || status === 403) return new ProviderError("invalid_key", `${name} rejected this API key. Check that you copied the whole key and that it's active${provider === "gemini" ? " (and that the Generative Language API is enabled for it)" : ""}.`, 401)
+  if (status === 401) return new ProviderError("invalid_key", `${name} rejected this API key. Check that you copied the whole key and that it's active.`, 401)
+  if (status === 403)
+    return new ProviderError(
+      "invalid_key",
+      `${name} recognised this key, but it isn't allowed to do this${provider === "gemini" ? " (check that the Generative Language API is enabled for the key's project)" : " — the key's account may not have access to this model, or its permissions or billing need attention"}. Try the default model, or check the key in your ${name} console.`,
+      403,
+    )
   if (status === 429) return new ProviderError("rate_limited", `${name} says you've hit a rate or spending limit on this key. Wait a minute or check your plan's quota.`, 429)
   if (status === 404) return new ProviderError("provider_error", `${name} doesn't recognise the model name. Check the model in API key settings.${detail ? ` (${detail.slice(0, 120)})` : ""}`, 400)
   if (status === 400 && detail && /api key|api_key|apikey/i.test(detail)) return new ProviderError("invalid_key", `${name} rejected this API key. Check that you copied the whole key.`, 401)

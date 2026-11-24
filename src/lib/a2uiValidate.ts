@@ -97,5 +97,10 @@ export function validateAgentMessages(messages: unknown[], ctx: { spec: GraphSpe
   const askedType = shape.data.chartType !== ctx.spec.chartType ? shape.data.chartType : null
   if (askedType && spec.chartType !== askedType) problems.push(`That graph can be drawn as: ${chartTypesFor(spec.analysis).join(", ")} — not “${askedType}”.`)
   problems.push(...validateGraphSpec(spec, ctx.ds).filter((p) => !problems.includes(p)))
+  // Say plainly when a chosen post-hoc test is overridden by the main test (as the app does).
+  const test = spec.params?.test ?? ""
+  const auto = test === "Welch t / Welch ANOVA" ? "Games–Howell" : test.startsWith("Mann") ? "Dunn's test" : null
+  if (auto && changes.some((c) => c.startsWith("params › posthoc") || c.startsWith("params › test")) && spec.params?.posthoc && spec.params.posthoc !== "None")
+    changes.push(`Multiple comparisons use ${auto} automatically with ${test.split(" / ")[1]} (the “${spec.params.posthoc}” setting applies to the other tests)`)
   return { ok: problems.length === 0, spec: problems.length ? ctx.spec : spec, overrides: problems.length ? [] : overrides, problems, changes }
 }

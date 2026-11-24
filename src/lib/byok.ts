@@ -58,4 +58,24 @@ export function byokHeaders(s: ByokSettings): Record<string, string> {
   return h
 }
 
+const PREFIX: Record<ProviderId, string> = { gemini: "AIza", openai: "sk-", anthropic: "sk-ant-" }
+
+/**
+ * Catches pasted text that clearly isn't an API key (a URL, a sentence) and keys for
+ * the wrong provider. `block` = can't be a key; otherwise a warning the person can ignore.
+ */
+export function keyProblem(provider: ProviderId, key: string): { block: boolean; message: string } | null {
+  const k = key.trim()
+  if (!k) return null
+  const name = providerName(provider)
+  if (/^https?:\/\//i.test(k) || k.includes("://")) return { block: true, message: "That's a web address, not an API key. Copy the key itself from your provider's console." }
+  if (/\s/.test(k)) return { block: true, message: "API keys don't contain spaces. Check that you copied only the key." }
+  if (k.length < 20) return { block: true, message: `That's too short to be an API key for ${name}. Check that you copied the whole key.` }
+  // Most specific prefix first, so an Anthropic "sk-ant-" key isn't mistaken for an OpenAI "sk-" key.
+  const owner = (["anthropic", "gemini", "openai"] as ProviderId[]).find((p) => k.startsWith(PREFIX[p]))
+  if (owner && owner !== provider) return { block: false, message: `This looks like an API key for ${providerName(owner)}. Pick ${providerName(owner)} above, or paste your ${name} key.` }
+  if (!k.startsWith(PREFIX[provider])) return { block: false, message: `${name} keys usually start with “${PREFIX[provider]}”. Check that this is the right key — or use Check key.` }
+  return null
+}
+
 export const providerName = (id: ProviderId) => PROVIDERS.find((p) => p.id === id)?.name ?? id

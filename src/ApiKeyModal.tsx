@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { verifyKey } from "./lib/ai"
-import { PROVIDERS, type ByokSettings, type ProviderId } from "./lib/byok"
+import { keyProblem, PROVIDERS, type ByokSettings, type ProviderId } from "./lib/byok"
 
 type Status = { serverKeys: Record<string, boolean>; quota: { used: number; limit: number } } | null
 
@@ -31,6 +31,7 @@ export function ApiKeyModal({ settings, status, onSave, onClear, onClose }: { se
   }
 
   const free = status?.serverKeys?.[draft.provider]
+  const problem = keyProblem(draft.provider, draft.key)
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="key-title">
@@ -55,12 +56,13 @@ export function ApiKeyModal({ settings, status, onSave, onClear, onClose }: { se
           <div className="key-row">
             <input type={show ? "text" : "password"} value={draft.key} placeholder={provider.keyHint} autoComplete="off" spellCheck={false} onChange={(e) => { setDraft({ ...draft, key: e.target.value.trim() }); setCheck({}) }} />
             <button type="button" onClick={() => setShow((v) => !v)}>{show ? "Hide" : "Show"}</button>
-            <button type="button" onClick={() => void runCheck()} disabled={!draft.key || check.busy}>{check.busy ? "Checking…" : "Check key"}</button>
+            <button type="button" onClick={() => void runCheck()} disabled={!draft.key || check.busy || problem?.block}>{check.busy ? "Checking…" : "Check key"}</button>
           </div>
           <small className="dim">
             Don't have one? <a href={provider.keyUrl} target="_blank" rel="noreferrer">Get a {provider.name} key</a>. Checking only lists the provider's models — it doesn't use any credit.
           </small>
         </label>
+        {problem && !check.message && <div className={problem.block ? "problem" : "warn-msg"}>{problem.message}</div>}
         {check.message && <div className={check.ok ? "ok-msg" : "problem"}>{check.ok ? "✓ " : ""}{check.message}</div>}
 
         <label className="field">
@@ -84,7 +86,7 @@ export function ApiKeyModal({ settings, status, onSave, onClear, onClose }: { se
           {settings.key && <button type="button" className="danger" onClick={onClear}>Remove saved key</button>}
           <span className="grow" />
           <button type="button" onClick={onClose}>Cancel</button>
-          <button type="button" className="primary" onClick={() => onSave(draft)}>{draft.key ? "Save key" : "Save (use free tier)"}</button>
+          <button type="button" className="primary" disabled={!!problem?.block} onClick={() => onSave(draft)}>{draft.key ? "Save key" : free ? "Save (use free tier)" : "Save"}</button>
         </div>
       </div>
     </div>

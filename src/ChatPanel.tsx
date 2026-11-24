@@ -9,7 +9,7 @@ import type { FigureText } from "./lib/figureText"
 import { chartTypesFor, type GraphSpec } from "./lib/graphSpec"
 import type { Dataset } from "./lib/parse"
 import type { ChartSpec } from "./lib/specs"
-import { statsForSummary, unverifiedNumbers } from "./lib/summaryCheck"
+import { chartNames, restoreNames, statsForSummary, unverifiedNumbers } from "./lib/summaryCheck"
 
 type Usage = TaskResponse["usage"]
 type Turn =
@@ -17,7 +17,7 @@ type Turn =
   | { kind: "edit"; reply: string; changes: string[]; problems: string[]; applied: boolean; before: GraphSpec; usage?: Usage; undone?: boolean }
   | { kind: "advise"; reply: string; proposal: { spec: GraphSpec; changes: string[]; messages: Record<string, unknown>[] } | null; problems: string[]; applied?: boolean; before?: GraphSpec; usage?: Usage; undone?: boolean }
   | { kind: "summary"; text: string; unverified: string[]; usage?: Usage }
-  | { kind: "polish"; reply: string; legend: string; methods: string; unverified: string[]; applied?: boolean; before?: GraphSpec; usage?: Usage }
+  | { kind: "polish"; reply: string; legend: string; methods: string; unverified: string[]; missingNames?: string[]; applied?: boolean; before?: GraphSpec; usage?: Usage }
   | { kind: "consent" }
   | { kind: "cleanup"; reply: string; result: CleanupResult | null; problems: string[]; applied?: boolean; undone?: boolean; usage?: Usage }
   | { kind: "error"; text: string; code: string }
@@ -73,7 +73,21 @@ export function ChatPanel(props: Props) {
 
   const push = (t: Turn) => setTurns((prev) => [...prev, t])
   const patchTurn = (i: number, patch: Partial<Turn>) => setTurns((prev) => prev.map((x, k) => (k === i ? ({ ...x, ...patch } as Turn) : x)))
-  const history = () => turns.flatMap((t): { role: "user" | "model"; text: string }[] => (t.kind === "user" ? [{ role: "user", text: t.text }] : t.kind === "edit" || t.kind === "advise" ? [{ role: "model", text: t.reply }] : []))
+  /** Conversation for the AI, with what actually happened after each reply (applied, undone, failed) so it never guesses. */
+  const history = () =>
+    turns.flatMap((t): { role: "user" | "model"; text: string }[] => {
+      if (t.kind === "user") return [{ role: "user", text: t.text }]
+      if (t.kind === "error") return [{ role: "model", text: `[This request failed before any answer: ${t.text} Nothing was changed.]` }]
+      if (t.kind === "edit") {
+        const status = !t.applied ? "[Not applied — nothing changed.]" : t.undone ? "[Applied, then the researcher clicked Undo — the graph is back to how it was before this change.]" : `[Applied: ${t.changes.join("; ") || "no changes"}.]`
+        return [{ role: "model", text: `${t.reply}\n${status}` }]
+      }
+      if (t.kind === "advise") {
+        const status = !t.proposal ? "" : t.undone ? "\n[The researcher applied this recommendation, then clicked Undo — it is no longer in effect.]" : t.applied ? "\n[The researcher applied this recommendation.]" : "\n[Recommendation shown but not applied.]"
+        return [{ role: "model", text: `${t.reply}${status}` }]
+      }
+      return []
+    })
   const fail = (e: unknown) => {
     const err = e instanceof AgentError ? e : new AgentError("error", String(e))
     push({ kind: "error", text: err.message, code: err.code })
@@ -115,7 +129,10 @@ export function ChatPanel(props: Props) {
     if (!computed) return
     const res = await askAi("polish", byok, { ...base(), question: style, figureText: computed.figureText })
     const source = [computed.figureText.legend, computed.figureText.methods]
-    push({ kind: "polish", reply: res.reply, legend: res.legend ?? "", methods: res.methods ?? "", unverified: unverifiedNumbers(`${res.legend} ${res.methods}`, source), usage: res.usage })
+    const names = chartNames(computed.charts)
+    const legend = restoreNames(computed.figureText.legend, res.legend ?? "", names)
+    const methods = restoreNames(computed.figureText.methods, res.methods ?? "", names)
+    push({ kind: "polish", reply: res.reply, legend: legend.text, methods: methods.text, unverified: unverifiedNumbers(`${legend.text} ${methods.text}`, source), missingNames: [...new Set([...legend.missing, ...methods.missing])], usage: res.usage })
   }
 
   const runCleanup = async (q = "") => {
@@ -287,6 +304,7 @@ export function ChatPanel(props: Props) {
                 <div className="panel-label">Polished methods</div>
                 <p className="summary-text">{t.methods}</p>
                 <Verified unverified={t.unverified} what="original text" />
+                {!!t.missingNames?.length && <div className="problem small">⚠ These group names are missing from the rewrite: {t.missingNames.join(", ")}. Check the text before using it.</div>}
                 <div className="turn-foot">
                   {!t.applied ? (
                     <button type="button" className="primary" onClick={() => { const before = spec; onApply({ ...spec, figureText: { legend: t.legend, methods: t.methods } }, [], []); patchTurn(i, { applied: true, before }) }}>Use this text</button>

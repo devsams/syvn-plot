@@ -26,14 +26,16 @@ export const ColumnChart = forwardRef<SVGSVGElement, { spec: ColumnChartSpec }>(
   let hi = Math.max(...highs)
   if (spec.logY) {
     lo = Math.min(...all.filter((v) => v > 0))
-    hi *= brackets.length ? 2.5 ** brackets.length : 1.5
+    hi *= 1.15 // brackets get their own pixel band above the axis (below), not extra decades
   } else {
     if (spec.style === "bar") lo = Math.min(0, lo)
     const pad = (hi - lo) * 0.08 || 1
     if (spec.style !== "bar" || lo < 0) lo -= pad
     hi += pad * (1 + brackets.length * 1.6)
   }
-  const { ticks, map: y } = yAxis(lo, hi, spec.logY, H - M.bottom, M.top)
+  // Log axes: reserve a pixel band for the brackets instead of inflating the data range by decades.
+  const bracketBand = spec.logY && brackets.length ? 16 + brackets.length * 20 : 0
+  const { ticks, map: y } = yAxis(lo, hi, spec.logY, H - M.bottom, M.top + bracketBand)
 
   const plotW = W - M.left - M.right
   const band = plotW / Math.max(groups.length, 1)
@@ -107,7 +109,7 @@ export const ColumnChart = forwardRef<SVGSVGElement, { spec: ColumnChartSpec }>(
       })}
 
       {brackets.map((b, level) => {
-        const top = y(ticks[ticks.length - 1]) + 16 + level * 20
+        const top = (bracketBand ? M.top : y(ticks[ticks.length - 1])) + 16 + level * 20
         return (
           <g key={`${b.a}-${b.b}`}>
             <path d={`M${cx(b.a)} ${top + 7} V${top} H${cx(b.b)} V${top + 7}`} fill="none" stroke={INK} strokeWidth={1.3} />
