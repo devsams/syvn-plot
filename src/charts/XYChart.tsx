@@ -4,6 +4,7 @@ import type { XYChartSpec } from "../lib/specs"
 import { Legend, Note, Paper, YAxis, color } from "./frame"
 import { useChartSize } from "./size"
 import { INK, linear, niceTicks, tickLabel, yAxis } from "./scale"
+import { arrMin, arrMax } from "../lib/minmax"
 
 /** One XY renderer for lines, symbols, error bars, step (survival), bars (histogram), fitted curves and reference lines. */
 export const XYChart = forwardRef<SVGSVGElement, { spec: XYChartSpec }>(function XYChart({ spec }, ref) {
@@ -14,10 +15,10 @@ export const XYChart = forwardRef<SVGSVGElement, { spec: XYChartSpec }>(function
   for (const r of spec.refLines ?? []) (r.axis === "x" ? xsAll : ysAll).push(r.value)
   const hasBars = spec.series.some((s) => s.mode === "bars")
   if (hasBars) ysAll.push(0)
-  const halfBar = Math.max(0, ...spec.series.filter((s) => s.mode === "bars").map((s) => (s.barWidth ?? 0) / 2))
+  const halfBar = arrMax([0, ...spec.series.filter((s) => s.mode === "bars").map((s) => (s.barWidth ?? 0) / 2)])
 
-  const xMin = Math.min(...xsAll) - halfBar
-  const xMax = Math.max(...xsAll) + halfBar
+  const xMin = arrMin([...xsAll]) - halfBar
+  const xMax = arrMax([...xsAll]) + halfBar
   let x: (v: number) => number
   let xTicks: number[]
   if (spec.logX) {
@@ -31,7 +32,7 @@ export const XYChart = forwardRef<SVGSVGElement, { spec: XYChartSpec }>(function
     xTicks = niceTicks(xMin, xMax)
     x = linear(xTicks[0], xTicks[xTicks.length - 1], M.left, W - M.right)
   }
-  const [yLo, yHi] = spec.yDomain ?? [Math.min(...ysAll), Math.max(...ysAll)]
+  const [yLo, yHi] = spec.yDomain ?? [arrMin([...ysAll]), arrMax([...ysAll])]
   const { ticks: yTicks, map: y } = yAxis(yLo, yHi, spec.logY, H - M.bottom, M.top)
   const bottom = y(yTicks[0])
   const allLegend = spec.series.map((s, i) => ({ name: s.name, color: color(i, s.color), hide: s.hideInLegend })).filter((l) => !l.hide)
@@ -134,7 +135,7 @@ function Density({ points, x, y, color: c }: { points: { x: number; y: number }[
     const key = `${Math.floor(px / cell)},${Math.floor(py / cell)}`
     bins.set(key, (bins.get(key) ?? 0) + 1)
   }
-  const max = Math.log1p(Math.max(1, ...bins.values()))
+  const max = Math.log1p(arrMax([1, ...bins.values()]))
   return (
     <g>
       {[...bins.entries()].map(([key, n]) => {

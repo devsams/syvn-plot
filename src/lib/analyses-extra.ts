@@ -8,6 +8,7 @@ import { numbersOf, toNumber, type Column, type Dataset } from "./parse"
 import type { BarsSpec, ChartSpec, TableSpec, XYSeries } from "./specs"
 import { clusterOrder, fit4PL, fmt, fourPL, linearFit, mean, pca, summarize, trapezoid, zscoreRow } from "./stats"
 import { PALETTE_FOR, RE, byName, cols, levelsOf, names, need, replicateSets, role, roleAll, str, errHalf, errLabel, type Params, type Result, type Roles, type RunOptions } from "./helpers"
+import { arrMin, arrMax } from "./minmax"
 
 type Detector = (ds: Dataset) => { score: number; roles: Roles; params?: Params } | null
 type Runner = (ds: Dataset, roles: Roles, params: Params, opts: RunOptions) => Result
@@ -169,7 +170,7 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
     const series: XYSeries[] = Cs.map((c, k) => {
       const pts = sortedPts(t, asNums(c))
       const pos = pts.filter((p) => p.y > 0)
-      const cmax = Math.max(...pts.map((p) => p.y))
+      const cmax = arrMax([...pts.map((p) => p.y)])
       const tmax = pts.find((p) => p.y === cmax)?.x ?? null
       const auc = trapezoid(pts)
       const tail = pos.slice(-3)
@@ -203,7 +204,7 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
         if (f && (!best || f.slope > best.mu)) best = { mu: f.slope, a: f.intercept, at: win[Math.floor(w / 2)].x }
       }
       const lag = best && best.mu > 0 ? Math.max(0, (Math.log(pts[0]?.y ?? 1) - best.a) / best.mu) : null
-      rows.push([s.name, best?.mu ?? null, best && best.mu > 0 ? Math.LN2 / best.mu : null, lag, Math.max(...s.points.map((p) => p.y)), trapezoid(s.points), s.reps])
+      rows.push([s.name, best?.mu ?? null, best && best.mu > 0 ? Math.LN2 / best.mu : null, lag, arrMax([...s.points.map((p) => p.y)]), trapezoid(s.points), s.reps])
     }
     return {
       headline: `${sets.length} growth curve${sets.length > 1 ? "s" : ""} · µmax from the steepest ${Math.max(3, Math.round((sets[0]?.points.length ?? 0) / 6))}-point window of ln(OD)`,
@@ -247,8 +248,8 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
       let tmFit: number | null = null
       if (!isDeriv) {
         const part = falling ? pts.slice(iHi, iLo + 1) : pts.slice(iLo, iHi + 1)
-        const lo = Math.min(...part.map((p) => p.y))
-        const hi = Math.max(...part.map((p) => p.y))
+        const lo = arrMin([...part.map((p) => p.y)])
+        const hi = arrMax([...part.map((p) => p.y)])
         const half = part.find((p) => (falling ? p.y <= (lo + hi) / 2 : p.y >= (lo + hi) / 2))?.x ?? peak.x
         const width = (part[part.length - 1].x - part[0].x) / 8 || 1
         const f = part.length >= 5 ? fit4PL(part.map((p) => p.x), part.map((p) => p.y), { mid: half, hill: (falling ? -1 : 1) / (width * Math.LN10) }) : null
@@ -281,13 +282,13 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
       const bsd = base.length > 1 ? summarize(base).sd : 0
       return { name: c.name, pts: pts.map((p) => ({ x: p.x, y: p.y - bm })), bsd }
     })
-    const maxAll = Math.max(...curves.flatMap((c) => c.pts.map((p) => p.y)))
+    const maxAll = arrMax([...curves.flatMap((c) => c.pts.map((p) => p.y))])
     const sdMed = [...curves.map((c) => c.bsd)].sort((a, b) => a - b)[Math.floor(curves.length / 2)] || maxAll * 0.01
     const thr = params.threshold?.startsWith("10%") ? 0.1 * maxAll : Math.max(10 * sdMed, maxAll * 0.02)
     const rows: TableSpec["rows"] = curves.map((c) => {
       const i = c.pts.findIndex((p, k) => k > 0 && p.y >= thr && c.pts[k - 1].y < thr)
       const cq = i > 0 ? c.pts[i - 1].x + ((thr - c.pts[i - 1].y) / (c.pts[i].y - c.pts[i - 1].y)) * (c.pts[i].x - c.pts[i - 1].x) : null
-      return [c.name, cq ?? "Undetermined", Math.max(...c.pts.map((p) => p.y))]
+      return [c.name, cq ?? "Undetermined", arrMax([...c.pts.map((p) => p.y)])]
     })
     return {
       headline: `${curves.length} curves · baseline cycles 3–15 · threshold ${fmt(thr)} ΔRFU`,
@@ -304,7 +305,7 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
     need(pts.length >= 20, "Need at least 20 points.")
     const ys = pts.map((p) => p.y)
     const base = [...ys].sort((a, b) => a - b)[Math.floor(ys.length * 0.05)]
-    const max = Math.max(...ys) - base
+    const max = arrMax([...ys]) - base
     const thr = base + (Number(params.minHeight) || 5) / 100 * max
     const w = Math.max(2, Math.round(pts.length / 200))
     const peaks: number[] = []
@@ -363,7 +364,7 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
     if (params.cluster !== "none" && rows.length >= 3) rows = clusterOrder(filled).map((i) => rows[i])
     if (params.cluster === "rows and columns" && Vs.length >= 3) colIdx = clusterOrder(Vs.map((_, j) => rows.map((r) => r.vals[j] ?? 0)))
     const z = params.scale === "row z-score"
-    const lim = z ? Math.min(3, Math.max(...rows.flatMap((r) => r.vals.filter((v): v is number => v !== null).map(Math.abs)))) : undefined
+    const lim = z ? Math.min(3, arrMax(rows.flatMap((r) => r.vals.filter((v): v is number => v !== null).map(Math.abs)))) : undefined
     return {
       headline: `${rows.length}${total > rows.length ? ` of ${total} (most variable)` : ""} rows × ${Vs.length} columns · ${params.scale || "row z-score"} · clustering: ${params.cluster || "none"}`,
       charts: [{ kind: "heatmap", title: "Heatmap", rows: rows.map((r) => r.name), cols: colIdx.map((j) => Vs[j].name), values: rows.map((r) => colIdx.map((j) => r.vals[j])), scale: z ? "diverging" : "sequential", domain: z ? [-lim!, lim!] : undefined, legendLabel: z ? "z-score" : params.scale === "log2(x+1)" ? "log2" : "value", showValues: rows.length * Vs.length <= 120 }],
@@ -399,8 +400,8 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
       }),
     )
     const combos = bliss.flat().filter((v): v is number => v !== null)
-    const lim = Math.max(10, ...combos.map(Math.abs))
-    const best = combos.length ? Math.max(...combos) : null
+    const lim = arrMax([10, ...combos.map(Math.abs)])
+    const best = combos.length ? arrMax([...combos]) : null
     return {
       headline: `${da.length - 1} × ${db.length - 1} combinations · mean Bliss excess ${fmt(mean(combos))} (positive = synergy)`,
       charts: [
@@ -426,7 +427,7 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
       groups = Vs.map((c) => reps.find((r) => r.cols.includes(c))?.name ?? c.name)
       Xm = Vs.map((c) => vars.map((i) => c.values[i] as number))
       const flat = Xm.flat()
-      if (flat.every((v) => v >= 0) && Math.max(...flat) > 100) Xm = Xm.map((r) => r.map((v) => Math.log2(v + 1)))
+      if (flat.every((v) => v >= 0) && arrMax([...flat]) > 100) Xm = Xm.map((r) => r.map((v) => Math.log2(v + 1)))
     } else {
       const G = role(ds, roles, "group")
       const Lb = role(ds, roles, "label")
@@ -474,7 +475,7 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
     const P = role(ds, roles, "p")
     need(A && F, "Pick mean expression and log2 fold change.")
     const cut = Number(params.pCutoff) || 0.05
-    const logX = numbersOf(A!).every((v) => v >= 0) && Math.max(...numbersOf(A!)) > 50
+    const logX = numbersOf(A!).every((v) => v >= 0) && arrMax([...numbersOf(A!)]) > 50
     const pts = A!.values.flatMap((a, i) => {
       const x = toNumber(a)
       const y = toNumber(F!.values[i])
@@ -514,7 +515,7 @@ export const EXTRA_RUN: Record<ExtraId, Runner> = {
       if (!f) return
       const eff = 10 ** (-1 / f.slope) - 1
       effs.push({ name: g, e: 100 * eff })
-      const xr = [Math.min(...std.map((p) => p.x)), Math.max(...std.map((p) => p.x))]
+      const xr = [arrMin([...std.map((p) => p.x)]), arrMax([...std.map((p) => p.x)])]
       series.push({ name: g, mode: "points", color: PALETTE_FOR(k), points: std })
       series.push({ name: `${g} fit`, mode: "line", color: PALETTE_FOR(k), hideInLegend: true, points: xr.map((x) => ({ x, y: f.intercept + f.slope * Math.log10(x) })) })
       fitRows.push([g, f.slope, f.intercept, f.r2, 100 * eff, `${fmt(xr[0])} – ${fmt(xr[1])}`, std.length])

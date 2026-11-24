@@ -5,6 +5,7 @@ import { fmtP, summarize } from "../lib/stats"
 import { CategoryLabel, Note, Paper, YAxis, needsRotate } from "./frame"
 import { useChartSize } from "./size"
 import { INK, PALETTE, jitter, yAxis } from "./scale"
+import { arrMin, arrMax } from "../lib/minmax"
 
 /** Prism-style column graph: bar + dots, scatter + mean, box, violin; optional before–after lines and significance brackets. */
 export const ColumnChart = forwardRef<SVGSVGElement, { spec: ColumnChartSpec }>(function ColumnChart({ spec }, ref) {
@@ -22,10 +23,10 @@ export const ColumnChart = forwardRef<SVGSVGElement, { spec: ColumnChartSpec }>(
   const all = groups.flatMap((g) => g.values)
   const lows = [...all, ...groups.map((_, i) => errOf(i)[0]).filter(Number.isFinite)]
   const highs = [...all, ...groups.map((_, i) => errOf(i)[1]).filter(Number.isFinite)]
-  let lo = Math.min(...lows)
-  let hi = Math.max(...highs)
+  let lo = arrMin([...lows])
+  let hi = arrMax([...highs])
   if (spec.logY) {
-    lo = Math.min(...all.filter((v) => v > 0))
+    lo = arrMin([...all.filter((v) => v > 0)])
     hi *= 1.15 // brackets get their own pixel band above the axis (below), not extra decades
   } else {
     if (spec.style === "bar") lo = Math.min(0, lo)
@@ -160,7 +161,7 @@ function violinPath(values: number[], x: number, halfWidth: number, y: (v: numbe
     const v = lo + ((hi - lo) * k) / steps
     pts.push([v, values.reduce((acc, xi) => acc + Math.exp(-0.5 * ((v - xi) / bw) ** 2), 0)])
   }
-  const maxD = Math.max(...pts.map((p) => p[1])) || 1
+  const maxD = arrMax([...pts.map((p) => p[1])]) || 1
   const right = pts.map(([v, d]) => `${x + (d / maxD) * halfWidth},${y(v)}`)
   const left = [...pts].reverse().map(([v, d]) => `${x - (d / maxD) * halfWidth},${y(v)}`)
   return `M${right.join(" L")} L${left.join(" L")} Z`

@@ -6,6 +6,7 @@ import { CategoryLabel, Legend, Note, Paper, YAxis, color , needsRotate } from "
 import { useChartSize } from "./size"
 import { colorAt, isDark, scaleByName } from "./palettes"
 import { INK, jitter, yAxis } from "./scale"
+import { arrMin, arrMax } from "../lib/minmax"
 
 /** Grouped or stacked bars: categories on X, one bar per series. */
 export const GroupedChart = forwardRef<SVGSVGElement, { spec: GroupedChartSpec }>(function GroupedChart({ spec }, ref) {
@@ -21,19 +22,19 @@ export const GroupedChart = forwardRef<SVGSVGElement, { spec: GroupedChartSpec }
 
   let hi = 0
   let lo = 0
-  if (stacked) hi = spec.mode === "percent" ? 100 : Math.max(...totals)
+  if (stacked) hi = spec.mode === "percent" ? 100 : arrMax([...totals])
   else
     spec.series.forEach((ser, s) =>
       ser.values.forEach((v, c) => {
         const top = (v ?? 0) + (ser.err?.[c] ?? 0)
         const pts = ser.points?.[c] ?? []
-        hi = Math.max(hi, top, ...pts)
-        lo = Math.min(lo, val(s, c), ...pts)
+        hi = arrMax([hi, top, ...pts])
+        lo = arrMin([lo, val(s, c), ...pts])
       }),
     )
   if (spec.refLine !== undefined) hi = Math.max(hi, spec.refLine)
   const logPos = spec.series.flatMap((s) => [...s.values, ...(s.points ?? []).flat()]).filter((v): v is number => v !== null && v > 0)
-  const { ticks, map: y } = yAxis(spec.logY ? Math.min(...logPos) : lo, spec.logY ? hi * 1.3 : hi * 1.05, spec.logY, H - M.bottom, M.top)
+  const { ticks, map: y } = yAxis(spec.logY ? arrMin([...logPos]) : lo, spec.logY ? hi * 1.3 : hi * 1.05, spec.logY, H - M.bottom, M.top)
   const base = spec.logY ? y(ticks[0]) : y(Math.max(0, ticks[0]))
   const band = (W - M.left - M.right) / Math.max(nCat, 1)
   const barW = stacked ? Math.min(band * 0.6, 70) : Math.min((band * 0.8) / Math.max(nSer, 1), 40)
@@ -91,9 +92,9 @@ export const Heatmap = forwardRef<SVGSVGElement, { spec: HeatmapSpec }>(function
   const nr = spec.rows.length
   const nc = spec.cols.length
   const flat = spec.values.flat().filter((v): v is number => v !== null && Number.isFinite(v))
-  const [d0, d1] = spec.domain ?? (spec.scale === "diverging" ? [-Math.max(...flat.map(Math.abs)), Math.max(...flat.map(Math.abs))] : [Math.min(...flat), Math.max(...flat)])
-  const longest = Math.max(...spec.cols.map((c) => Math.min(c.length, 12)))
-  const left = Math.min(110, 14 + 6.5 * Math.max(...spec.rows.map((r) => Math.min(r.length, 12))))
+  const [d0, d1] = spec.domain ?? (spec.scale === "diverging" ? [-arrMax([...flat.map(Math.abs)]), arrMax([...flat.map(Math.abs)])] : [arrMin([...flat]), arrMax([...flat])])
+  const longest = arrMax([...spec.cols.map((c) => Math.min(c.length, 12))])
+  const left = Math.min(110, 14 + 6.5 * arrMax(spec.rows.map((r) => Math.min(r.length, 12))))
   const right = 70
   const fit0 = Math.min((W - left - right) / nc, (H - 64) / nr)
   const rotateCols = longest * 6.5 > fit0

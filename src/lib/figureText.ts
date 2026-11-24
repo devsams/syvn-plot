@@ -8,6 +8,7 @@ import type { Result } from "./analyses"
 import type { GraphSpec } from "./graphSpec"
 import type { ChartSpec, ColumnChartSpec } from "./specs"
 import { fmt, fmtP } from "./stats"
+import { arrMin, arrMax } from "./minmax"
 
 export type FigureText = { legend: string; methods: string }
 
@@ -17,8 +18,8 @@ const errName = (e: string) => (e === "sem" ? "SEM" : e === "ci" ? "95% confiden
 function nRange(c: ColumnChartSpec) {
   const ns = c.groups.map((g) => g.values.length).filter((n) => n > 0)
   if (!ns.length) return ""
-  const lo = Math.min(...ns)
-  const hi = Math.max(...ns)
+  const lo = arrMin([...ns])
+  const hi = arrMax([...ns])
   return lo === hi ? `n = ${lo} per group` : `n = ${lo}–${hi} per group`
 }
 

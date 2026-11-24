@@ -38,6 +38,7 @@ export { levelsOf, replicateSets, descriptiveTable } from "./helpers"
 export type { Roles, Params, RunOptions, Result } from "./helpers"
 import { EXTRA_DETECT, EXTRA_RUN } from "./analyses-extra"
 import { friedman, wilcoxonSignedRank } from "./tests"
+import { arrMin, arrMax } from "./minmax"
 export type Detection = { id: AnalysisId; score: number; roles: Roles; params: Params }
 
 // --- detection ---------------------------------------------------------------
@@ -67,7 +68,7 @@ const DETECT: Record<AnalysisId, Detector> = {
     if (values.length < 2) return null
     // Same subjects measured repeatedly means the columns share a scale (not Age vs CRP vs BMI).
     const means = values.map((c) => Math.abs(summarize(numbersOf(c)).mean)).filter((m) => m > 0)
-    const sameScale = means.length >= 2 && Math.max(...means) / Math.min(...means) < 3
+    const sameScale = means.length >= 2 && arrMax([...means]) / arrMin([...means]) < 3
     const score = named.length >= 2 ? 72 : subject && sameScale && values.length <= 8 && !cols(ds, ["category"]).filter((c) => c !== subject).length ? 55 : 15
     return { score, roles: { values: names(values), subject: subject ? [subject.name] : [] } }
   },
@@ -188,7 +189,7 @@ const DETECT: Record<AnalysisId, Detector> = {
       const lv = levelsOf(c)
       if (!lv.every((l) => /^[A-Pa-p]\d{1,2}$/.test(l))) return false
       const letters = new Set(lv.map((l) => l[0].toUpperCase()))
-      const maxCol = Math.max(...lv.map((l) => Number(l.slice(1))))
+      const maxCol = arrMax([...lv.map((l) => Number(l.slice(1)))])
       return lv.length >= 24 && letters.size >= 3 && maxCol <= 24
     }
     const well = ds.columns.find((c) => c.kind !== "number" && (RE.well.test(c.name) ? levelsOf(c).length >= 6 : looksLikeWells(c)))
@@ -385,7 +386,7 @@ const RUN: Record<AnalysisId, Runner> = {
       const mode = params.normalize
       if (!mode || mode === "none") return c
       const seq = order.map((i) => c.values[i]).filter((v): v is number => typeof v === "number")
-      const f0 = mode === "ΔF/F0" ? mean(seq.slice(0, Math.max(1, Math.round(seq.length * 0.1)))) : mode === "% of max" ? Math.max(...seq) : seq[0]
+      const f0 = mode === "ΔF/F0" ? mean(seq.slice(0, Math.max(1, Math.round(seq.length * 0.1)))) : mode === "% of max" ? arrMax([...seq]) : seq[0]
       need(Number.isFinite(f0) && f0 !== 0, `Cannot normalize “${c.name}”: baseline is zero.`)
       return { ...c, values: c.values.map((v) => (typeof v !== "number" ? v : mode === "ΔF/F0" ? (v - f0) / f0 : mode === "% of max" ? (100 * v) / f0 : v / f0)) }
     }
@@ -415,7 +416,7 @@ const RUN: Record<AnalysisId, Runner> = {
         const r = pearson(pts.map((p) => p[0]), pts.map((p) => p[1]))
         if (!f) return
         series[k].mode = "points"
-        const xr = [Math.min(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[0]))]
+        const xr = [arrMin([...pts.map((p) => p[0])]), arrMax([...pts.map((p) => p[0])])]
         series.push({ name: `${set.name} fit`, mode: "line", dashed: true, hideInLegend: true, color: undefined, points: xr.map((x) => ({ x, y: f.intercept + f.slope * x })) })
         fitRows.push([set.name, f.slope, f.intercept, f.r2, r ? fmtP(r.p) : null, pts.length])
       })
@@ -516,8 +517,8 @@ const RUN: Record<AnalysisId, Runner> = {
       const ys = set.rows.flatMap((r) => r.vals)
       const fit = fit4PL(xs, ys)
       if (!fit) return
-      const x0 = Math.min(...xs)
-      const x1 = Math.max(...xs)
+      const x0 = arrMin([...xs])
+      const x1 = arrMax([...xs])
       series.push({ name: `${set.name} fit`, mode: "line", color: c, hideInLegend: true, points: Array.from({ length: 80 }, (_, i) => x0 + ((x1 - x0) * i) / 79).map((x) => ({ x: alreadyLog ? x : 10 ** x, y: fourPL(fit, x) })) })
       fitRows.push([set.name, fit.bottom, fit.top, fit.logEC50, alreadyLog ? null : 10 ** fit.logEC50, fit.hill, fit.r2, fit.n])
     })
@@ -550,9 +551,9 @@ const RUN: Record<AnalysisId, Runner> = {
       const r = (fl!.top - fl!.bottom) / (y - fl!.bottom) - 1
       return r > 0 ? 10 ** (fl!.logEC50 - Math.log10(r) / fl!.hill) : NaN
     }
-    const [xmin, xmax] = [Math.min(...std.map((p) => p.x)), Math.max(...std.map((p) => p.x))]
-    const [ymin, ymax] = [Math.min(...std.map((p) => p.y)), Math.max(...std.map((p) => p.y))]
-    const curveX = model === "linear" ? [xmin, xmax] : Array.from({ length: 60 }, (_, i) => Math.log10(Math.min(...pos.map((p) => p.x))) + ((Math.log10(xmax) - Math.log10(Math.min(...pos.map((p) => p.x)))) * i) / 59).map((l) => 10 ** l)
+    const [xmin, xmax] = [arrMin([...std.map((p) => p.x)]), arrMax([...std.map((p) => p.x)])]
+    const [ymin, ymax] = [arrMin([...std.map((p) => p.y)]), arrMax([...std.map((p) => p.y)])]
+    const curveX = model === "linear" ? [xmin, xmax] : Array.from({ length: 60 }, (_, i) => Math.log10(arrMin([...pos.map((p) => p.x)])) + ((Math.log10(xmax) - Math.log10(arrMin([...pos.map((p) => p.x)]))) * i) / 59).map((l) => 10 ** l)
     const unkPts = unk.map((u) => ({ x: inv(u.y), y: u.y, label: unk.length <= 12 ? u.name : undefined })).filter((p) => Number.isFinite(p.x) && p.x > 0)
     const series: XYSeries[] = [
       { name: "Standards", mode: "points", points: std, color: PALETTE_FOR(0) },
@@ -579,7 +580,7 @@ const RUN: Record<AnalysisId, Runner> = {
       return typeof s === "number" && vals.length ? [{ s, vals }] : []
     })
     const fit = fitMichaelisMenten(rows.flatMap((r) => r.vals.map(() => r.s)), rows.flatMap((r) => r.vals))
-    const smax = Math.max(...rows.map((r) => r.s))
+    const smax = arrMax([...rows.map((r) => r.s)])
     const series: XYSeries[] = [{ name: "Data", mode: "points", color: PALETTE_FOR(0), points: rows.map((r) => { const m = mean(r.vals); const e = r.vals.length > 1 ? errHalf(r.vals, opts.error) : 0; return { x: r.s, y: m, ...(e ? { lo: m - e, hi: m + e } : {}) } }) }]
     if (fit) series.push({ name: "Michaelis–Menten fit", mode: "line", color: PALETTE_FOR(0), hideInLegend: true, points: Array.from({ length: 60 }, (_, i) => (smax * i) / 59).map((x) => ({ x, y: (fit.vmax * x) / (fit.km + x) })) })
     return {
@@ -607,7 +608,7 @@ const RUN: Record<AnalysisId, Runner> = {
     })
     const series: XYSeries[] = groups.map((g, k) => {
       const km = kaplanMeier(g.times, g.events)
-      const last = Math.max(...g.times)
+      const last = arrMax([...g.times])
       const pts = km.steps.map((s) => ({ x: s.t, y: 100 * s.s }))
       if (pts[pts.length - 1].x < last) pts.push({ x: last, y: pts[pts.length - 1].y })
       return { name: g.name, mode: "step", color: PALETTE_FOR(k), points: pts, ticks: km.censorMarks.map((c) => ({ x: c.t, y: 100 * c.s })) }
@@ -736,7 +737,7 @@ const RUN: Record<AnalysisId, Runner> = {
       const pr = pearson(pts.map((p) => p[0]), pts.map((p) => p[1]))
       const sp = spearman(pts.map((p) => p[0]), pts.map((p) => p[1]))
       const f = linearFit(pts.map((p) => p[0]), pts.map((p) => p[1]))
-      const xr = [Math.min(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[0]))]
+      const xr = [arrMin([...pts.map((p) => p[0])]), arrMax([...pts.map((p) => p[0])])]
       return {
         headline: `${pts.length} XY pairs · Pearson r = ${pr ? fmt(pr.r) : "–"}`,
         charts: [{ kind: "xy", title: `${b.name} vs ${a.name}`, xLabel: a.name, yLabel: b.name, series: [{ name: "Data", mode: "points", points: pts.map(([x, y]) => ({ x, y })) }, ...(f ? [{ name: "Regression", mode: "line" as const, dashed: true, color: "#1a1a1a", hideInLegend: true, points: xr.map((x) => ({ x, y: f.intercept + f.slope * x })) }] : [])], note: pr ? `r = ${fmt(pr.r)}, R² = ${fmt(pr.r * pr.r)}, P ${pr.p < 0.0001 ? "" : "= "}${fmtP(pr.p)}` : undefined }],
@@ -812,8 +813,8 @@ const RUN: Record<AnalysisId, Runner> = {
         const m = /^([A-Pa-p])(\d{1,2})$/.exec(String(w ?? "").trim())
         return m ? [{ r: m[1].toUpperCase(), c: Number(m[2]), v: toNumber(Vs[0].values[i]) }] : []
       })
-      const nr = Math.max(...cells.map((c) => c.r.charCodeAt(0) - 64))
-      const nc = Math.max(...cells.map((c) => c.c))
+      const nr = arrMax([...cells.map((c) => c.r.charCodeAt(0) - 64)])
+      const nc = arrMax([...cells.map((c) => c.c)])
       rows = Array.from({ length: nr }, (_, i) => String.fromCharCode(65 + i))
       colsL = Array.from({ length: nc }, (_, i) => String(i + 1))
       values = rows.map((r) => colsL.map((c) => cells.find((x) => x.r === r && x.c === Number(c))?.v ?? null))

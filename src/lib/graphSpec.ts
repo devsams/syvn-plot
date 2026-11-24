@@ -11,6 +11,7 @@ import { ANALYSES, analysisById, type AnalysisId, type ColumnKindName } from "./
 import { detectAll, levelsOf, runAnalysis, type Params, type Result, type Roles } from "./analyses"
 import { toNumber, type Column, type Dataset } from "./parse"
 import type { Annotation, ChartSpec, ColumnStyle, ErrorKind, TableSpec } from "./specs"
+import { arrMin, arrMax } from "./minmax"
 
 export const SURFACE_ID = "research-graph"
 
@@ -243,7 +244,7 @@ export function filterColumns(ds: Dataset) {
   return ds.columns.map((c: Column) => {
     if (c.kind === "number") {
       const v = c.values.filter((x): x is number => typeof x === "number")
-      return { name: c.name, kind: c.kind, min: Math.min(...v), max: Math.max(...v) }
+      return { name: c.name, kind: c.kind, min: arrMin([...v]), max: arrMax([...v]) }
     }
     const lv = levelsOf(c)
     return { name: c.name, kind: c.kind, levels: lv.length <= 60 ? lv : lv.slice(0, 60) }

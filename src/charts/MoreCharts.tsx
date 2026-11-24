@@ -5,21 +5,22 @@ import { summarize } from "../lib/stats"
 import { CategoryLabel, Legend, Note, Paper, YAxis, color , needsRotate } from "./frame"
 import { useChartSize } from "./size"
 import { INK, jitter, linear, tickLabel, yAxis } from "./scale"
+import { arrMin, arrMax } from "../lib/minmax"
 
 /** One bar or point (with optional CI) per label; vertical (waterfall) or horizontal (ranked bars, forest plot). */
 export const BarsChart = forwardRef<SVGSVGElement, { spec: BarsSpec }>(function BarsChart({ spec }, ref) {
   const { W, H, M } = useChartSize()
   const n = spec.labels.length
   const vals = [...spec.values, ...(spec.lo ?? []), ...(spec.hi ?? []), ...(spec.refLines ?? []).map((r) => r.value)].filter((v): v is number => v !== null && Number.isFinite(v) && (!spec.logScale || v > 0))
-  let lo = Math.min(...vals)
-  let hi = Math.max(...vals)
+  let lo = arrMin([...vals])
+  let hi = arrMax([...vals])
   if (spec.mark === "bar" && !spec.logScale) {
     lo = Math.min(0, lo)
     hi = Math.max(0, hi)
   }
   const pad = spec.logScale ? 0 : (hi - lo) * 0.05
   const horizontal = spec.orientation === "horizontal"
-  const longest = Math.max(...spec.labels.map((l) => Math.min(l.length, 34)))
+  const longest = arrMax([...spec.labels.map((l) => Math.min(l.length, 34))])
   const left = horizontal ? Math.min(230, 16 + longest * 6.2) : M.left
   const top = M.top + (spec.legend && spec.legend.length > 1 ? 12 : 0)
   const axis = horizontal ? yAxis(lo - pad, hi + pad, spec.logScale, left, W - M.right) : yAxis(lo - pad, hi + pad, spec.logScale, H - M.bottom, top)
@@ -127,7 +128,7 @@ export const SplitViolinChart = forwardRef<SVGSVGElement, { spec: SplitViolinSpe
     })
     return { pts, st }
   }
-  const maxD = Math.max(1e-12, ...spec.values.flatMap((side) => side.filter((v) => v.length).map((v) => Math.max(...kde(v).pts.map((p) => p[1])) / v.length)))
+  const maxD = arrMax([1e-12, ...spec.values.flatMap((side) => side.filter((v) => v.length).map((v) => arrMax(kde(v).pts.map((p) => p[1])) / v.length))])
   return (
     <svg ref={ref} viewBox={`0 0 ${W} ${H}`} className="chart-svg" role="img" aria-label={spec.title} fontFamily="Arial, Helvetica, sans-serif">
       <Paper title={spec.title} />

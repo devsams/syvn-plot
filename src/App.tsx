@@ -25,6 +25,10 @@ import { validateGraphSpec } from "./lib/graphSpec"
 injectBasicCatalogStyles()
 
 const GROUPS = [...new Set(ANALYSES.map((a) => a.group))]
+
+/** Largest data file accepted (2 MB) — keeps parsing fast in the browser and the hosted app light. */
+const MAX_FILE_BYTES = 2 * 1024 * 1024
+const fmtSize = (b: number) => (b >= 1024 * 1024 ? `${(b / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`)
 type Msg = Record<string, unknown>
 
 export default function App() {
@@ -65,6 +69,8 @@ export default function App() {
   const load = useCallback(async (f: File, sheet?: string) => {
     try {
       setProblem(null)
+      if (f.size > MAX_FILE_BYTES)
+        throw new Error(`“${f.name}” is ${fmtSize(f.size)} — the limit is 2 MB. Try saving just the sheet or columns you need (or as CSV, which is usually smaller), then upload again.`)
       const parsed = await readFile(f, sheet)
       if (parsed.columns.length === 0) throw new Error("That file has no readable columns. Check that it's a CSV or Excel sheet with a header row.")
       if (parsed.rowCount === 0) throw new Error("That file has column names but no data rows.")
@@ -359,7 +365,7 @@ export default function App() {
           }}
         />
         <strong>{dataset ? "Drop another file or click to replace" : "Drag a CSV or Excel file here"}</strong>
-        {!dataset && <span>or click to choose a file · .csv .tsv .xlsx .xls</span>}
+        {!dataset && <span>or click to choose a file · .csv .tsv .xlsx .xls · up to 2 MB</span>}
       </section>
 
       <details id="samples" data-tour="samples" className="samples-box" open={samplesOpen} onToggle={(e) => setSamplesOpen((e.target as HTMLDetailsElement).open)}>

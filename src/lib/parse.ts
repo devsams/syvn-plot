@@ -1,5 +1,6 @@
 import Papa from "papaparse"
 import * as XLSX from "xlsx"
+import { arrMax } from "./minmax"
 
 export type Cell = string | number | null
 export type ColumnKind = "number" | "category" | "date" | "text"
@@ -36,7 +37,7 @@ function fromRows(fileName: string, raw: unknown[][], forceHeader = false): Data
   const rows = raw.filter((row) => Array.isArray(row) && row.some((c) => c !== null && String(c).trim() !== ""))
   if (rows.length === 0) return { fileName, columns: [], rowCount: 0 }
 
-  const width = Math.max(...rows.map((r) => r.length))
+  const width = arrMax([...rows.map((r) => r.length)])
   const first = rows[0]
   // Treat the first row as a header unless it is mostly numbers.
   const numericInFirst = first.filter((c) => toNumber(c) !== null).length

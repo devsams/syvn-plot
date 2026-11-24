@@ -1,3 +1,4 @@
+import { arrMin, arrMax } from "./minmax"
 /** Descriptive statistics and simple tests, Prism-style. */
 export type Summary = {
   n: number
@@ -504,7 +505,7 @@ export function nelderMead(f: (p: number[]) => number, start: number[], steps?: 
       }
     }
   }
-  const best = values.indexOf(Math.min(...values))
+  const best = values.indexOf(arrMin([...values]))
   return { params: simplex[best], sse: values[best] }
 }
 
@@ -530,9 +531,9 @@ export function fit4PL(xs: number[], ys: number[], init?: { mid: number; hill: n
   const lin = linearFit(xs, ys)
   const sorted = [...xs].sort((a, b) => a - b)
   const xspan = (sorted[sorted.length - 1] - sorted[0]) || 1
-  const start = [Math.min(...ys), Math.max(...ys), init?.mid ?? sorted[Math.floor(sorted.length / 2)], init?.hill ?? (lin && lin.slope < 0 ? -1 : 1)]
+  const start = [arrMin([...ys]), arrMax([...ys]), init?.mid ?? sorted[Math.floor(sorted.length / 2)], init?.hill ?? (lin && lin.slope < 0 ? -1 : 1)]
   const sse = (p: number[]) => xs.reduce((s, x, i) => s + (ys[i] - fourPL({ bottom: p[0], top: p[1], logEC50: p[2], hill: p[3] }, x)) ** 2, 0)
-  const span = Math.max(...ys) - Math.min(...ys) || 1
+  const span = arrMax([...ys]) - arrMin([...ys]) || 1
   const { params, sse: e } = nelderMead(sse, start, [span * 0.1, span * 0.1, Math.min(0.5, xspan * 0.05), Math.abs(start[3]) * 0.5 || 0.5], 4000)
   const [bottom, top, logEC50, hill] = params
   return { bottom, top, logEC50, hill, r2: rSquared(ys, e), n: xs.length }
@@ -548,7 +549,7 @@ export function fitMichaelisMenten(s: number[], v: number[]): { vmax: number; km
   }
   const sorted = [...s].sort((a, b) => a - b)
   const f = (p: number[]) => s.reduce((acc, x, i) => acc + (v[i] - (p[0] * x) / (Math.abs(p[1]) + x)) ** 2, 0)
-  const { params, sse } = nelderMead(f, [Math.max(...v), sorted[Math.floor(sorted.length / 2)] || 1])
+  const { params, sse } = nelderMead(f, [arrMax([...v]), sorted[Math.floor(sorted.length / 2)] || 1])
   return { vmax: params[0], km: Math.abs(params[1]), r2: rSquared(v, sse) }
 }
 
