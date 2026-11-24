@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 
+import { Icon } from "./Icon"
 import { search, type SearchEntry } from "./lib/searchIndex"
 
 const POPULAR = ["t test", "ANOVA", "Mann–Whitney", "Tukey", "IC50", "Kaplan–Meier", "violin", "heatmap", "export PDF"]
@@ -42,7 +43,7 @@ export function SearchBar({ onPick }: { onPick: (e: SearchEntry) => void }) {
 
   return (
     <div className="search" ref={boxRef}>
-      <span className="search-icon" aria-hidden>🔍</span>
+      <span className="search-icon" aria-hidden><Icon name="search" size={14} /></span>
       <input
         ref={inputRef}
         value={q}
@@ -62,6 +63,7 @@ export function SearchBar({ onPick }: { onPick: (e: SearchEntry) => void }) {
             setActive((a) => Math.max(0, a - 1))
           } else if (e.key === "Enter" && results[active]) pick(results[active])
           else if (e.key === "Escape") {
+            setQ("")
             setOpen(false)
             inputRef.current?.blur()
           }

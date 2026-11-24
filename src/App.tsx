@@ -3,6 +3,7 @@ import { injectBasicCatalogStyles } from "@a2ui/web_core/v0_9/basic_catalog"
 
 import { ApiKeyModal } from "./ApiKeyModal"
 import { SearchBar } from "./SearchBar"
+import { Icon } from "./Icon"
 import type { SearchEntry } from "./lib/searchIndex"
 import { ChatPanel, type Computed } from "./ChatPanel"
 import { DataPreview, DataSummary } from "./DataSummary"
@@ -205,19 +206,86 @@ export default function App() {
   const aiActions = useMemo(() => ({ available: aiAvailable, run: (t: AiTask) => setRequested(t) }), [aiAvailable])
   const title = sample && dataset && sample.file === dataset.fileName ? `${sample.title} (${dataset.fileName})` : dataset ? (dataset.sheetName ? `${dataset.fileName} — ${dataset.sheetName}` : dataset.fileName) : ""
 
+  const openSearch = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
+  const openSamples = (group?: string) => {
+    setSamplesOpen(true)
+    requestAnimationFrame(() => document.getElementById(group ? `group-${group}` : "samples")?.scrollIntoView({ behavior: "smooth", block: "start" }))
+  }
+  const goHome = () => {
+    setDataset(null)
+    setSpec(null)
+    setSample(null)
+    setProblem(null)
+    setSamplesOpen(true)
+    document.querySelector(".page")?.scrollTo({ top: 0 })
+  }
+
   return (
-    <div className="app">
-      <header className="top">
-        <div>
-          <h1>BenchPlot</h1>
-          <p>Lab data in, publication-ready graphs and statistics out. Upload a CSV or Excel sheet, or start from a sample experiment.</p>
-        </div>
-        <div className="top-actions">
-          <SearchBar onPick={(e) => void onSearchPick(e)} />
-          <button type="button" className={`key-btn ${byok.key ? "has-key" : ""}`} onClick={() => setKeyOpen(true)}>
-            🔑 {byok.key ? `${providerName(byok.provider)} key · unlimited` : "API key"}
+    <div className="shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <span className="brand-mark">BP</span>
+          <span className="brand-name">BenchPlot</span>
+          <button type="button" className="brand-search" aria-label="Search" onClick={openSearch}>
+            <Icon name="search" />
           </button>
         </div>
+        <nav className="nav">
+          <button type="button" className={`nav-item ${!dataset ? "on" : ""}`} onClick={goHome}>
+            <Icon name="home" /> Home
+          </button>
+          <button type="button" className="nav-item" onClick={() => inputRef.current?.click()}>
+            <Icon name="upload" /> Upload data
+          </button>
+          <button type="button" className="nav-item" onClick={() => openSamples()}>
+            <Icon name="flask" /> Sample experiments
+          </button>
+          <button type="button" className="nav-item" onClick={openSearch}>
+            <Icon name="search" /> Search <kbd className="nav-kbd">⌘K</kbd>
+          </button>
+        </nav>
+        {dataset && (
+          <div className="nav-section">
+            <div className="nav-label">Open file</div>
+            <button type="button" className={`nav-item ${spec ? "on" : ""}`} onClick={() => document.querySelector(".page")?.scrollTo({ top: 0, behavior: "smooth" })}>
+              <Icon name="file" /> <span className="nav-text">{dataset.fileName}</span>
+            </button>
+            {def && (
+              <div className="nav-sub">
+                <Icon name="chart" size={14} /> <span className="nav-text">{def.label}</span>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="nav-section nav-scroll">
+          <div className="nav-label">Analyses</div>
+          {GROUPS.map((g) => (
+            <button key={g} type="button" className="nav-item nav-plain" onClick={() => openSamples(g)}>
+              {g}
+            </button>
+          ))}
+        </div>
+        <div className="sidebar-foot">
+          <button type="button" className={`nav-item key-item ${byok.key ? "has-key" : ""}`} onClick={() => setKeyOpen(true)}>
+            <span className="avatar">
+              <Icon name="key" size={14} />
+            </span>
+            <span className="nav-text">{byok.key ? `${providerName(byok.provider)} key` : "Add AI key"}</span>
+            <span className={`dot ${byok.key ? "on" : ""}`} aria-label={byok.key ? "AI on" : "AI off"} />
+          </button>
+        </div>
+      </aside>
+
+      <div className="main">
+      <div className="page">
+      <header className="page-head">
+        <div className="page-title">
+          <h1>{dataset ? title : "Make a graph"}</h1>
+          <p className="crumb">
+            BenchPlot <span aria-hidden>·</span> {dataset && def ? def.label : dataset ? "Check your columns" : "Upload a CSV or Excel sheet, or start from a sample experiment"}
+          </p>
+        </div>
+        <SearchBar onPick={(e) => void onSearchPick(e)} />
       </header>
       {notice && (
         <div className="notice" role="status">
@@ -259,10 +327,10 @@ export default function App() {
         {!dataset && <span>or click to choose a file · .csv .tsv .xlsx .xls</span>}
       </section>
 
-      <details className="samples-box" open={samplesOpen} onToggle={(e) => setSamplesOpen((e.target as HTMLDetailsElement).open)}>
+      <details id="samples" className="samples-box" open={samplesOpen} onToggle={(e) => setSamplesOpen((e.target as HTMLDetailsElement).open)}>
         <summary>Sample experiments ({SAMPLE_EXPERIMENTS.length}) — one for every analysis</summary>
         {GROUPS.map((g) => (
-          <div key={g} className="sample-group">
+          <div key={g} id={`group-${g}`} className="sample-group">
             <h3>{g}</h3>
             <div className="sample-grid">
               {SAMPLE_EXPERIMENTS.filter((e) => analysisById(e.analysis)?.group === g).map((e) => (
@@ -452,6 +520,9 @@ export default function App() {
           </div>
         </>
       )}
+
+      </div>
+      </div>
 
       {keyOpen && (
         <ApiKeyModal
