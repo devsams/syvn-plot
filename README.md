@@ -1,73 +1,152 @@
 # Syvn Plot
 
-Lab data in, publication-ready graphs and statistics out. Drop a CSV or Excel file (or pick a sample experiment) and get Prism-style graphs and statistics right away. Everything runs in the browser and makes no AI calls.
+**Lab data in, publication-ready graphs and statistics out.**
 
-    npm install
-    npm run dev -- --port 5180
+Drop in a CSV or Excel sheet from your experiment and Syvn Plot works out what kind of data it is. It draws the right graph and runs the right statistical test. It also writes the figure legend and methods paragraph for you. Everything runs in your browser, and your data never leaves your computer.
 
-## Analyses (34, auto-detected; switch analysis or reassign columns in the panel)
+![Syvn Plot home: “Show me compare groups from xenograft tumor volume. Build graph”](docs/screenshots/home.jpg)
 
-| Group | Analyses |
+---
+
+## What you can do with it
+
+- **Turn a spreadsheet into a figure in seconds.** Drop a file, click **Build graph**, and you get a finished, labelled graph with significance brackets.
+- **Get the statistics done properly.** You get t tests, ANOVA, non-parametric tests and multiple comparisons, plus normality and outlier checks on every group comparison. You choose the test from a dropdown, with no formulas or syntax to learn.
+- **Fit curves.** Fit dose–response curves (EC50/IC50), standard curves with unknowns, enzyme kinetics, pharmacokinetics, growth rates and melting temperatures.
+- **Make it journal-ready.** Use colour-blind-safe and journal palettes and edit any text on the graph. Export vector PDF, SVG or high-resolution PNG at exact journal column widths.
+- **Copy a ready-written legend and methods paragraph.** It's generated from your actual results, ready to paste into a manuscript.
+- **Learn by example.** 42 realistic sample experiments cover every analysis, from a xenograft study to a sandwich ELISA, RT-qPCR or a thermal-shift assay.
+- **Optionally, ask an AI assistant** to restyle the graph in plain words or recommend a test. It can also clean up messy data or draft a results summary. It uses your own Gemini, OpenAI or Claude key and only runs when you click.
+
+![A finished graph page: summary tiles, analysis picker, and the AI assistant on the right](docs/screenshots/dashboard.jpg)
+
+---
+
+## How it works, in four steps
+
+1. **Say what you want to see.** The home page is a sentence: *“Show me [compare groups] from [xenograft tumor volume].”* Click a chip to change it. You can also drop your own file anywhere on the page (CSV, TSV or Excel, up to 2 MB), and the sentence fills in from your columns. For example: *“Show me [a group comparison] of [Tumor volume] by [Treatment].”*
+2. **Click Build graph.** Syvn Plot picks the analysis that fits your data, draws the graph and computes the statistics.
+3. **Adjust anything.** You can change:
+   - the graph style (bar, dots, box, violin), error bars (SD, SEM, 95% CI), the test and the multiple-comparisons method
+   - axis scales (linear or log), and filter out groups
+   - colours, titles and any text on the graph.
+
+   Everything updates instantly.
+4. **Export and write up.** Download the figure at journal or slide size and copy the generated legend and methods text.
+
+New here? Click the **compass** icon in the left rail for a guided tour. Press **⌘K** (or Ctrl+K, or /) to search for anything: a test (“Mann–Whitney”), a graph (“violin”), an assay (“IC50”) or a feature (“export PDF”).
+
+![Graphs with significance brackets, live controls, and the generated figure legend](docs/screenshots/graph.jpg)
+
+---
+
+## 34 analyses, picked for you
+
+Syvn Plot reads your columns (numbers, groups, dates, IDs, and plate-reader grids too) and suggests the analyses that fit. You can always switch analysis or reassign columns.
+
+| Group | What's included |
 |---|---|
-| Compare groups | Column (replicates in columns), one factor (with ÷ loading control / Renilla and % or fold of control), paired / before–after, two factors (two-way ANOVA; grouped bars or split violin), summary data (mean/SD/N) |
-| XY & curves | XY (replicate averaging, ΔF/F0 / % max / fold-of-first, linear or initial-rate fit), long time course, dose–response (4PL EC50/IC50), standard curve + unknowns, Michaelis–Menten, pharmacokinetics (Cmax, Tmax, AUC, t½), growth curves (µmax, doubling, lag), melt / thermal shift (Tm), qPCR amplification (Cq), chromatogram peaks |
-| Survival & counts | Kaplan–Meier + log-rank, contingency (chi-square, Fisher, % bars, count heatmap), parts of whole |
-| Distribution & correlation | Histogram (linear or log bins), correlation (Pearson/Spearman, matrix), Bland–Altman |
-| Heatmaps & multivariate | Matrix heatmap (z-score/log2, hierarchical clustering, top-variance rows), Bliss synergy, PCA (samples in rows or columns), scatter colored by group (UMAP/t-SNE/flow, density shading for big data) |
-| Lab assays | qPCR ΔΔCt, qPCR standard curve + primer efficiency, Z′ / S/B / %CV per plate, plate map, volcano, MA plot |
-| Specialized plots | Waterfall, forest plot, ranked horizontal bars (GO terms) |
+| **Compare groups** | Replicates in columns · grouped by a column (with ÷ loading control / Renilla, % or fold of control) · paired / before–after · two factors (two-way ANOVA, grouped bars or split violin) · re-plot published summary data (mean, SD, N) |
+| **XY & curves** | XY with replicate averaging (ΔF/F0, % of max, linear or initial-rate fit) · time course · dose–response (4PL, EC50/IC50) · standard curve + interpolate unknowns · Michaelis–Menten · pharmacokinetics (Cmax, Tmax, AUC, t½) · growth curves (µmax, doubling time, lag) · melt / thermal shift (Tm) · qPCR amplification (Cq) · chromatogram peaks |
+| **Survival & counts** | Kaplan–Meier with log-rank test · contingency tables (chi-square, Fisher's exact) · parts of a whole (pie, donut) |
+| **Distribution & correlation** | Histograms (linear or log bins) · correlation (Pearson, Spearman, correlation matrix) · Bland–Altman method comparison |
+| **Heatmaps & multivariate** | Matrix heatmap with clustering · drug-combination synergy (Bliss) · PCA · scatter coloured by group (UMAP, t-SNE, flow dot plots, density shading for big data) |
+| **Lab assays** | qPCR ΔΔCt fold change · qPCR standard curve & primer efficiency · assay quality (Z′, S/B, %CV) · 96/384-well plate map · volcano plot · MA plot |
+| **Specialized plots** | Waterfall (% change per subject) · forest plot (OR, HR, effect sizes) · ranked horizontal bars (GO terms, top hits) |
 
-**Pick a test from a dropdown:** the Analysis picker sits above the graph, and the live controls on the graph include **Test** and **Multiple comparisons**. Change either and the graph, statistics, tables and legend/methods text update straight away, with no AI needed. With a key, the AI sets the same options ("use Mann–Whitney", "Tukey instead"), validated the same way.
+### Statistics
 
-**Search** (header, ⌘K / Ctrl+K or /) finds analyses, tests, graph types, sample experiments and features ("u test", "ic50", "violin", "export pdf", "log scale"). Picking a result applies it to your data, or opens a matching sample experiment when no file is loaded.
+| | |
+|---|---|
+| **Parametric** | Welch's, Student's and paired t tests · one-way, Welch, repeated-measures and two-way (type III) ANOVA |
+| **Non-parametric** | Mann–Whitney · Wilcoxon signed-rank · Kruskal–Wallis · Friedman |
+| **Multiple comparisons** | Holm–Šídák · Tukey HSD · Bonferroni · Dunnett (vs control) · Games–Howell (after Welch ANOVA) · Dunn's (after Kruskal–Wallis) |
+| **Checks on every group comparison** | Shapiro–Wilk normality · Grubbs' outlier test, with a plain-language hint when a different test may suit your data better |
+| **Fits & more** | 4-parameter logistic · Michaelis–Menten · linear regression · log-rank · chi-square · Fisher's exact · Pearson and Spearman · PCA · hierarchical clustering · non-compartmental PK |
 
-Every graph has a toolbar:
-- **Labels**: title and axis names.
-- **Colors**: 26 palette themes (colorblind-safe Okabe–Ito / Tol, grayscale, Nature, Science, Lancet, NEJM, JAMA, Cell, Viridis, …); recolor any group, series or bar from a 122-swatch grid or a custom hex; 16 heatmap color scales.
-- **Text**: click any text on the graph to change or hide it; add your own labels and drag them into place.
-- **Full screen**: large view with a live preview of each export shape.
-- **Download**: journal single (85 mm), 1.5 (114 mm) and double column (174 mm), square, portrait, 16:9 slide (1920 × 1080) and A4 landscape. Formats: vector PDF (Arimo font embedded, so µ Δ ≥ ′ print correctly), SVG, and PNG at 150/300/600 dpi with the DPI stored in the file. Each size re-lays out the graph instead of stretching it.
-- X/Y axis scale (auto, linear, log) in the analysis panel. Column graphs cap dots at 400 per group, and XY clouds over 2,500 points switch to density shading, so 10k-cell datasets stay fast.
+---
 
-Statistics: Welch, Student and paired t tests; one-way, Welch, repeated-measures and two-way (type III) ANOVA; non-parametric Mann–Whitney, Wilcoxon signed-rank, Kruskal–Wallis and Friedman tests; multiple comparisons by Holm–Šídák, Tukey HSD, Bonferroni, Dunnett (vs control), Games–Howell (after Welch ANOVA) and Dunn's (after Kruskal–Wallis); Shapiro–Wilk normality and Grubbs' outlier checks on every group comparison; log-rank, chi-square, Fisher's exact, Pearson and Spearman, 4PL, Michaelis–Menten and linear fits, PCA (Jacobi eigen-decomposition), average-linkage clustering and non-compartmental PK. **Sample experiments:** 42 ready-made experiments (`src/lib/samples.ts`, data in `public/samples/`), at least one per analysis, each named by experiment type (xenograft study, sandwich ELISA, DSF thermal shift, RT-qPCR, HTS validation…) and opening with the graph style and options that suit it best. `node scripts/make-samples.mjs` regenerates the data.
+## Make the figure yours
 
-## How it works
+Every graph has its own toolbar:
 
-1. `src/lib/parse.ts`: reads CSV/TSV/XLSX and labels each column as number, category, date or text. It also recognizes plate-reader grids.
-2. `src/lib/helpers.ts`, `src/lib/analyses.ts`, `src/lib/analyses-extra.ts`: detection and runners. `src/lib/analysis-defs.ts`: the analysis catalog (roles, options). The UI and the AI prompt both use it.
-3. `src/lib/analyses.ts`: detection scoring and a runner for each analysis. Each runner returns chart and table specs.
-4. `src/lib/agent.ts`: turns specs into A2UI v0.9 messages. `src/a2ui/catalog.tsx` adds the custom components (Chart, StatsTable, ChartGrid) to the A2UI basic catalog.
-5. `src/charts/`: SVG renderers (column, XY/curves/survival/histogram, grouped/stacked bars, heatmap, pie), exportable as SVG or PNG.
+| Button | What it does |
+|---|---|
+| **Labels** | Edit the title and axis names |
+| **Colors** | 26 palettes (colour-blind-safe Okabe–Ito and Tol, grayscale, and Nature, Science, Cell, Lancet, NEJM and JAMA styles, Viridis…), recolour any single group, and 16 heatmap colour scales |
+| **Text** | Click any text on the graph to change or hide it; add your own labels and drag them into place |
+| **Full screen** | A large view with a live preview of each export size |
+| **Download** | Journal single column (85 mm), 1.5 column (114 mm), double column (174 mm), square, portrait, 16:9 slide and A4. The graph is re-laid out for each size, not stretched |
 
-## Graph state: `graphSpec` in one A2UI surface
+**Export formats:** vector **PDF** (with an embedded font, so µ, Δ, ≥ and ′ print correctly), **SVG**, and **PNG** at 150, 300 or 600 dpi.
 
-Each graph lives in one long-lived A2UI v0.9 surface, `research-graph`. Its locked catalog has only Column, Row, Text, Card, Chart, ChartGrid, StatsTable, ChartTypeControl, ScaleControl, FilterControl and ExportButton. The canonical state is `/graphSpec` in the data model:
+---
 
-`analysis, chartType, xColumn, yColumns, groupBy, xScale, yScale, title, xLabel, yLabel, filters, annotations, palette, errorBars`, plus `roles` / `params` (exact per-analysis column roles, kept in sync with x/y/group) and `chartEdits` (per-chart colors and text edits).
+## Your data stays private
 
-The setup panel, the live controls, the Labels/Colors/Text tools and the AI chat all change the graph by patching `graphSpec`. After the first `createSurface`, only changed parts are sent, as `updateComponents` / `updateDataModel` messages, so the view is never rebuilt. The setup panel's "Show A2UI messages" button shows the message log. Code: `src/lib/graphSpec.ts` and `src/research/`.
+- **Files are read in your browser.** They are never uploaded to a server.
+- **Statistics and graphs are calculated in your browser** too. No AI is involved.
+- **The AI assistant is optional and off by default.** It only runs when you click an AI button. Even then it receives a *description* of your columns (names, types, ranges and a few example rows), never the whole file. The one exception is data cleanup: it asks your permission before sending a sample of rows.
 
-## Free vs. with your own AI key
+---
 
-**Free, no key, nothing leaves the browser:** every analysis, graph, statistic, control, color, text edit and export. Each graph also gets a **figure legend and statistical-methods paragraph** (`src/lib/figureText.ts`), written from the graph settings and the computed statistics, ready to copy.
+## The optional AI assistant
 
-**With your own key** (API key button: Gemini, OpenAI or Anthropic Claude), the optional AI assistant adds:
+Add your own API key (Google Gemini, OpenAI or Anthropic Claude) with the **key** icon in the left rail. The key is stored only in your browser and is never saved or logged by the server.
 
-| Action | What it does | Guardrail |
+| Action | What it does | Safety net |
 |---|---|---|
-| Edit by asking | "log scale, drop Vehicle, violin plot" | A2UI patches validated against the CSV; Undo |
-| 🧭 Which test should I use? | Recommends an analysis and explains why; asks up to two questions if the design is unclear | Only Syvn Plot's analyses; nothing changes until you click "Apply recommendation" |
-| 🧹 Clean up my data | Proposes steps (merge group spellings, units → numbers, drop summary rows, fill merged cells, wide → long, …) | Asks before sending a data sample; local preview; "Apply cleanup" and Undo |
-| 📝 Summarize results | A results paragraph | Uses only numbers the app computed; each number is checked (`src/lib/summaryCheck.ts`) |
-| ✨ Polish legend | Rewrites the legend and methods for a journal | Numbers checked against the original; "Use this text" or back to the generated text |
+| **Edit by asking** | “log scale, drop Vehicle, violin plot” | Every change is checked against your data before it's applied, and there's an **Undo** button |
+| **Which test should I use?** | Recommends an analysis and explains why, asking a question or two if your design is unclear | Nothing changes until you click **Apply recommendation** |
+| **Clean up my data** | Merges inconsistent group spellings, turns “12 mg” into numbers, drops summary rows, fills merged cells, reshapes wide ↔ long… | Asks before sending a sample, shows a preview first, and has **Undo** |
+| **Summarize results** | Writes a results paragraph | Every number is checked against the statistics Syvn Plot computed |
+| **Polish legend** | Rewrites the legend and methods for a journal | Numbers and group names are checked against the original |
 
-The AI never computes statistics and is only called when you click. Server: `server/tasks.ts` (prompts and schemas per task), `server/routes.ts`. The shared-key free tier is **off** unless `FREE_DAILY_LIMIT` > 0 and a server key is set.
+The AI never calculates statistics itself; it only works with numbers Syvn Plot has already computed. It uses each provider's low-cost model by default (`gemini-3.5-flash-lite`, `gpt-4.1-mini`, `claude-haiku-5-5`). A typical request costs a fraction of a cent.
 
-## AI chat (bring your own key)
+---
 
-- Click **API key** and pick Google Gemini, OpenAI or Anthropic Claude, then paste your key. **Check key** lists the provider's models, which costs nothing. The key stays in this browser (localStorage, or sessionStorage if "remember" is off). It's sent as a header with each AI request, forwarded to the provider, and never stored or logged by the server.
-- With your own key, AI use is unlimited. Optionally, the server's key (`GEMINI_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` in `.env.local`) can give `FREE_DAILY_LIMIT` requests per browser per day. The default is 0, so it's off.
-- Default models (the cheap tier of each provider): `gemini-3.5-flash-lite`, `gpt-4.1-mini`, `claude-haiku-5-5`. Claude uses the official `@anthropic-ai/sdk` with structured output and low effort (medium for the test advisor). The server-side refusal fallback is only sent for models that support it, which Haiku doesn't. The model can be changed in the modal.
-- Each chat turn sends the current `graphSpec`, column metadata (names, types, ranges, group values, 5 example rows) and the component list. The agent replies with A2UI `updateDataModel` (and rarely `updateComponents`) patches.
-- **Strict validation** (`src/lib/a2uiValidate.ts`). Every incoming message is checked before anything renders: message shape, surface id, allowed operations (no create/delete surface), allowed paths (`/graphSpec` only), locked component types, existing component ids, and every column, filter value, chart type and scale against the CSV. Problems appear as plain-language messages ("There's no column called “Dose”… Columns in this file: …") and nothing is applied. Invalid keys, missing keys and free-tier limits get their own messages and a button to open key settings. Each applied turn has **Undo**.
-- Server: `server/routes.ts` (`/api/chat`, `/api/verify-key`, `/api/ai-status`), `server/agent.ts` (prompt, reply schema, conversion to A2UI), `server/providers/*`.
+## Run it yourself
+
+You need [Node.js](https://nodejs.org) 20 or newer.
+
+```bash
+git clone https://github.com/devsams/syvn-plot.git
+cd syvn-plot
+npm install
+npm run dev
+```
+
+Then open the address it prints (usually http://localhost:5173).
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Start the app with live reload |
+| `npm run build` | Type-check and build the static site into `dist/` |
+| `npm run preview` | Serve the built site locally |
+| `node scripts/make-samples.mjs` | Regenerate the sample experiment data |
+
+**Optional server-side AI key.** You can give visitors a few free AI requests a day without their own key. Copy `.env.example` to `.env.local` and set a provider key plus `FREE_DAILY_LIMIT`. It's off (0) by default. Never commit real keys; `.env` files are git-ignored.
+
+> **Hosting note:** the graphs, statistics and exports are a static site and can be hosted anywhere. The AI routes (`/api/ai-status`, `/api/verify-key`, `/api/chat`) currently run inside the Vite dev server. On a static host like Vercel the AI assistant won't work until those routes are moved to serverless functions.
+
+---
+
+## For developers
+
+**Tech stack:** React 19, TypeScript and Vite 6, with [A2UI](https://github.com/google/A2UI) v0.9 for the graph surface. Charts are hand-written SVG and the statistics are hand-written TypeScript. Other pieces: PapaParse and SheetJS for parsing, jsPDF with svg2pdf.js for PDF export, driver.js for the tour, and `@anthropic-ai/sdk` plus the REST APIs for Gemini and OpenAI.
+
+| Where | What |
+|---|---|
+| `src/lib/parse.ts` | Reads CSV/TSV/Excel and classifies each column (number, category, date, text); recognises plate-reader grids |
+| `src/lib/analysis-defs.ts` | The catalogue of analyses (column roles, options); shared by the UI and the AI prompts |
+| `src/lib/analyses.ts`, `analyses-extra.ts`, `stats.ts` | Detection scoring, one runner per analysis, and the statistics |
+| `src/lib/figureText.ts` | Generates the figure legend and methods paragraph |
+| `src/charts/` | SVG chart renderers |
+| `src/research/`, `src/lib/graphSpec.ts` | The A2UI graph surface and its state |
+| `src/lib/a2uiValidate.ts` | Strict validation of every AI-proposed change |
+| `src/Hero.tsx` | The chip-sentence builder on the home page |
+| `server/` | AI routes, prompts and provider adapters |
+| `public/samples/`, `src/lib/samples.ts` | The 42 sample experiments |
+
+**How the graph is driven.** Each graph lives in one long-lived A2UI surface called `research-graph`. Its whole state is a single `graphSpec` object, covering the analysis, chart type, columns, scales, filters, labels, colours and annotations. The setup panel, the live controls, the editing tools and the AI assistant all work the same way: each sends a small patch to `graphSpec`, and only the changed parts re-render. AI replies are A2UI messages. Each one is validated before anything changes: allowed operations and paths, locked component types, and every column, filter value and scale checked against your file. Problems come back as plain-language messages, and nothing is applied. To see the raw message log, open **Columns & options → Show A2UI messages**.
