@@ -54,15 +54,15 @@ function steps(opts: TourOptions, d: () => Driver): DriveStep[] {
   if (desktop)
     list.push({
       element: '[data-tour="nav"]',
-      popover: { title: "Get around", description: "Go home, upload a file, browse sample experiments or search — all from here.", side: "right", align: "start" },
+      popover: { title: "Get around", description: "Start a new graph, upload a file, browse sample experiments or search — all from this rail.", side: "right", align: "start" },
       skipMissingElement: true,
     })
   list.push(
     {
       element: '[data-tour="upload"]',
       popover: {
-        title: "Drop in your data",
-        description: "Drag a CSV or Excel sheet here (plate-reader exports work too). Your file is read in your browser — it isn't uploaded anywhere.",
+        title: "Say what you want to see",
+        description: "Click a chip to change it, then Build graph. Or drop a CSV or Excel sheet anywhere on the page — it's read in your browser, never uploaded.",
         side: "bottom",
         align: "center",
       },
@@ -79,12 +79,6 @@ function steps(opts: TourOptions, d: () => Driver): DriveStep[] {
       skipMissingElement: true,
     },
   )
-  if (desktop)
-    list.push({
-      element: '[data-tour="groups"]',
-      popover: { title: "Every kind of lab analysis", description: "Group comparisons, curves and fits, survival, counts, heatmaps and more. Click a group to jump to its samples.", side: "right", align: "start" },
-      skipMissingElement: true,
-    })
   list.push(
     {
       popover: {
@@ -97,14 +91,14 @@ function steps(opts: TourOptions, d: () => Driver): DriveStep[] {
             await opts.ensureGraph()
             await waitFor(".surface .test-ctl")
           }
-          document.querySelector(".page")?.scrollTo({ top: 0 })
+          document.querySelector(".canvas")?.scrollTo({ top: 0 })
           d().moveNext()
         },
       },
     },
     {
       element: '[data-tour="analysis"]',
-      popover: { title: "The analysis", description: "Syvn Plot picks the analysis that fits your columns (● marks the ones that fit). Change it here anytime; column choices live under “Columns & options”.", side: "bottom", align: "start" },
+      popover: { title: "The analysis", description: "Change the analysis here anytime (● marks the ones that fit your columns). Column choices live under “Columns & options” just below.", side: "bottom", align: "start" },
       skipMissingElement: true,
     },
     {
@@ -133,7 +127,7 @@ function steps(opts: TourOptions, d: () => Driver): DriveStep[] {
     },
     {
       element: '[data-tour="assistant"]',
-      popover: { title: "Optional AI assistant", description: "Add your own Gemini, OpenAI or Claude key to ask for changes in plain words, get test advice, clean messy data and draft a results summary. It only runs when you click.", side: "left", align: "start" },
+      popover: { title: "Optional AI assistant", description: "With your own Gemini, OpenAI or Claude key, ask for changes in plain words, get test advice, clean messy data and draft a results summary. It only runs when you click.", side: "left", align: "start" },
       skipMissingElement: true,
     },
   )

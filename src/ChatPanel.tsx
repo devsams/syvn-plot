@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { Icon } from "./Icon"
 
 import { validateAgentMessages, type ComponentOverride } from "./lib/a2uiValidate"
 import { AgentError, askAi, describeDataset, type AiTaskId, type TaskResponse } from "./lib/ai"
@@ -362,8 +363,8 @@ export function ChatPanel(props: Props) {
           send(input)
         }}
       >
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={mode === "advise" ? "Answer the advisor's question…" : "e.g. log scale, filter out Vehicle, violin plot"} disabled={!!busy} />
-        <button type="submit" disabled={!!busy || !input.trim()}>{mode === "advise" ? "Reply" : "Ask"}</button>
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={mode === "advise" ? "Answer the advisor's question…" : "Send a message… e.g. log scale, violin plot"} disabled={!!busy} />
+        <button type="submit" disabled={!!busy || !input.trim()} aria-label={mode === "advise" ? "Reply" : "Send"} title={mode === "advise" ? "Reply" : "Send"}><Icon name="arrowUp" size={16} /></button>
       </form>
     </section>
   )

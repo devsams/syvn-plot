@@ -8,7 +8,8 @@ import { START_TOUR_EVENT, cleanupDriverDom, replayTour, runTour, shouldAutoStar
 import type { Driver } from "driver.js"
 import type { SearchEntry } from "./lib/searchIndex"
 import { ChatPanel, type Computed } from "./ChatPanel"
-import { DataPreview, DataSummary } from "./DataSummary"
+import { ColumnCards, DataPreview } from "./DataSummary"
+import { DataSentence, HomeSentence } from "./Hero"
 import type { ComponentOverride } from "./lib/a2uiValidate"
 import { aiStatus } from "./lib/ai"
 import { ANALYSES, analysisById, type AnalysisId } from "./lib/analysis-defs"
@@ -39,7 +40,6 @@ export default function App() {
   const [dragging, setDragging] = useState(false)
   const [showMessages, setShowMessages] = useState(false)
   const [sample, setSample] = useState<SampleExperiment | null>(null)
-  const [samplesOpen, setSamplesOpen] = useState(true)
   const [overrides, setOverrides] = useState<ComponentOverride[]>([])
   const [agentLog, setAgentLog] = useState<Msg[]>([])
   const [components, setComponents] = useState<{ id: string; component: string }[]>([])
@@ -77,7 +77,6 @@ export default function App() {
       setFile(f)
       setSample(null)
       newDataset(parsed, null)
-      setSamplesOpen(false)
     } catch (e) {
       setProblem(e instanceof Error ? e.message : String(e))
     }
@@ -93,10 +92,7 @@ export default function App() {
     if (extra.chartType && chartTypesFor(next.analysis).includes(extra.chartType)) next = normalizeSpec({ ...next, chartType: extra.chartType }, next, ds)
     newDataset(ds, next)
     setSample(exp)
-    setSamplesOpen(false)
   }
-
-  const generate = (id: AnalysisId) => dataset && setSpec(specFromDetection(dataset, id))
 
   const update = useCallback((next: GraphSpec) => setSpec(next), [])
   const onSurfaceSpec = useCallback((next: GraphSpec) => setSpec(next), [])
@@ -221,7 +217,6 @@ export default function App() {
     const start = () => {
       if (tour?.isActive()) tour.destroy()
       cleanupDriverDom()
-      setSamplesOpen(true)
       tour = runTour({
         ensureGraph: () => {
           const exp = SAMPLE_EXPERIMENTS.find((e) => e.file === "drug-response.csv") ?? SAMPLE_EXPERIMENTS[0]
@@ -241,297 +236,305 @@ export default function App() {
   }, [])
 
   const openSearch = () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
-  const openSamples = (group?: string) => {
-    setSamplesOpen(true)
-    requestAnimationFrame(() => document.getElementById(group ? `group-${group}` : "samples")?.scrollIntoView({ behavior: "smooth", block: "start" }))
-  }
   const goHome = () => {
     setDataset(null)
     setSpec(null)
     setSample(null)
+    setFile(null)
     setProblem(null)
-    setSamplesOpen(true)
-    document.querySelector(".page")?.scrollTo({ top: 0 })
+    requestAnimationFrame(() => document.querySelector(".home-scroll")?.scrollTo({ top: 0 }))
+  }
+  const openSamples = (group?: string) => {
+    if (dataset) goHome()
+    setTimeout(() => document.getElementById(group ? `group-${group}` : "samples")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60)
+  }
+  const buildFromColumns = (id: AnalysisId, roles: Roles) => {
+    if (!dataset) return
+    const s = specFromDetection(dataset, id, { roles, params: defaultParams(dataset, id, roles) })
+    setSpec(normalizeSpec(s, s, dataset))
   }
 
+  const mode = !dataset ? "home" : !spec || !def ? "data" : "graph"
+  const sheetPicker =
+    dataset?.sheetNames && dataset.sheetNames.length > 1 && file ? (
+      <label className="field">
+        <span>Sheet</span>
+        <select value={dataset.sheetName} onChange={(e) => void load(file, e.target.value)}>
+          {dataset.sheetNames.map((s) => (
+            <option key={s}>{s}</option>
+          ))}
+        </select>
+      </label>
+    ) : null
+  const headline = computed?.result.headline
+
   return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <span className="brand-mark">SP</span>
-          <span className="brand-name">Syvn Plot</span>
-          <button type="button" className="brand-search" aria-label="Search" onClick={openSearch}>
-            <Icon name="search" />
-          </button>
-          <button type="button" className="brand-search mobile-only" aria-label="Take the tour" onClick={replayTour}>
-            <Icon name="compass" />
-          </button>
-        </div>
-        <nav className="nav" data-tour="nav">
-          <button type="button" className={`nav-item ${!dataset ? "on" : ""}`} onClick={goHome}>
-            <Icon name="home" /> Home
-          </button>
-          <button type="button" className="nav-item" onClick={() => inputRef.current?.click()}>
-            <Icon name="upload" /> Upload data
-          </button>
-          <button type="button" className="nav-item" onClick={() => openSamples()}>
-            <Icon name="flask" /> Sample experiments
-          </button>
-          <button type="button" className="nav-item" onClick={openSearch}>
-            <Icon name="search" /> Search <kbd className="nav-kbd">⌘K</kbd>
-          </button>
-        </nav>
-        {dataset && (
-          <div className="nav-section">
-            <div className="nav-label">Open file</div>
-            <button type="button" className={`nav-item ${spec ? "on" : ""}`} onClick={() => document.querySelector(".page")?.scrollTo({ top: 0, behavior: "smooth" })}>
-              <Icon name="file" /> <span className="nav-text">{dataset.fileName}</span>
-            </button>
-            {def && (
-              <div className="nav-sub">
-                <Icon name="chart" size={14} /> <span className="nav-text">{def.label}</span>
+    <div
+      className={`shell mode-${mode}`}
+      onDragOver={(e) => {
+        if (![...e.dataTransfer.types].includes("Files")) return
+        e.preventDefault()
+        setDragging(true)
+      }}
+      onDragLeave={(e) => {
+        if (!e.relatedTarget || !(e.currentTarget as Node).contains(e.relatedTarget as Node)) setDragging(false)
+      }}
+      onDrop={(e) => {
+        e.preventDefault()
+        setDragging(false)
+        const f = e.dataTransfer.files[0]
+        if (f) void load(f)
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm,.ods"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) void load(f)
+          e.target.value = ""
+        }}
+      />
+      <nav className="rail" data-tour="nav" aria-label="Main">
+        <button type="button" className="brand-mark" onClick={goHome} title="Syvn Plot — home" aria-label="Syvn Plot home">SP</button>
+        <button type="button" className={`rail-btn ${mode === "home" ? "on" : ""}`} onClick={goHome} title="New graph" aria-label="New graph">
+          <Icon name="plus" size={18} />
+        </button>
+        <button type="button" className="rail-btn" onClick={() => inputRef.current?.click()} title="Upload data" aria-label="Upload data">
+          <Icon name="upload" size={18} />
+        </button>
+        <button type="button" className="rail-btn" onClick={() => openSamples()} title="Sample experiments" aria-label="Sample experiments">
+          <Icon name="flask" size={18} />
+        </button>
+        <button type="button" className="rail-btn" onClick={openSearch} title="Search (⌘K)" aria-label="Search">
+          <Icon name="search" size={18} />
+        </button>
+        <span className="rail-gap" />
+        <button type="button" className="rail-btn" data-tour="replay" onClick={replayTour} title="Take the tour" aria-label="Take the tour">
+          <Icon name="compass" size={18} />
+        </button>
+        <button type="button" className={`rail-btn key-btn-rail ${byok.key ? "has-key" : ""}`} onClick={() => setKeyOpen(true)} title={byok.key ? `${providerName(byok.provider)} key saved` : "Add AI key"} aria-label="AI key settings">
+          <Icon name="key" size={18} />
+          <span className={`dot ${byok.key ? "on" : ""}`} />
+        </button>
+      </nav>
+
+      <div className="stage">
+        <header className="topbar">
+          <div className="crumbs">
+            <button type="button" className="crumb-home" onClick={goHome}>Syvn Plot</button>
+            {dataset && (
+              <>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-file" title={title}>{dataset.fileName}</span>
+              </>
+            )}
+            {mode === "graph" && def && (
+              <>
+                <span className="crumb-sep">/</span>
+                <span className="crumb-now">{def.label}</span>
+              </>
+            )}
+          </div>
+          <SearchBar onPick={(e) => void onSearchPick(e)} />
+        </header>
+        {notice && (
+          <div className="notice" role="status">
+            {notice}
+            <button type="button" className="icon-btn" onClick={() => setNotice(null)} aria-label="Dismiss">✕</button>
+          </div>
+        )}
+
+        {mode !== "graph" && (
+          <div className="home-scroll">
+            <section className="hero" data-tour="upload">
+              <div className="hero-glow" aria-hidden />
+              {mode === "data" && dataset && (
+                <div className="hero-file">
+                  <span className="hero-eyebrow"><Icon name="file" size={14} /> {dataset.fileName}{dataset.sheetName ? ` — ${dataset.sheetName}` : ""} · {dataset.rowCount} rows · {dataset.columns.length} columns</span>
+                  {sheetPicker}
+                </div>
+              )}
+              {mode === "home" ? (
+                <HomeSentence onBuild={(exp) => void loadSample(exp)} onUpload={() => inputRef.current?.click()} />
+              ) : (
+                dataset && <DataSentence key={`${dataset.fileName}|${dataset.sheetName ?? ""}|${dataset.columns.map((c) => c.name).join()}`} dataset={dataset} detections={detections} onBuild={buildFromColumns} />
+              )}
+              <p className="hero-sub">
+                {mode === "home" ? "or drop a CSV or Excel file anywhere" : "Change any chip, or drop a different file"} ·{" "}
+                <button type="button" className="link-btn" onClick={() => inputRef.current?.click()}>choose a file</button> · up to 2 MB
+              </p>
+              {problem && <div className="problem hero-problem">{problem}</div>}
+              <div className="foot-pill">
+                <span className="brand-mark small">SP</span>
+                <span>Statistics run in your browser — your file is never uploaded.<br />AI is optional and only runs when you click.</span>
               </div>
+            </section>
+
+            {mode === "data" && dataset && (
+              <section className="home-section">
+                <h2 className="home-h">What's in the file</h2>
+                <ColumnCards dataset={dataset} />
+              </section>
+            )}
+
+            {mode === "home" && (
+              <section id="samples" data-tour="samples" className="home-section">
+                <h2 className="home-h">Sample experiments <span className="dim">· {SAMPLE_EXPERIMENTS.length}, one for every analysis</span></h2>
+                {GROUPS.map((g) => (
+                  <div key={g} id={`group-${g}`} className="sample-group">
+                    <h3>{g}</h3>
+                    <div className="sample-grid">
+                      {SAMPLE_EXPERIMENTS.filter((e) => analysisById(e.analysis)?.group === g).map((e) => (
+                        <button key={e.title} type="button" className="sample-card" onClick={() => void loadSample(e)}>
+                          <span className="exp">{e.experiment}</span>
+                          <strong>{e.title}</strong>
+                          <span className="as">{analysisById(e.analysis)?.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </section>
             )}
           </div>
         )}
-        <div className="nav-section nav-scroll" data-tour="groups">
-          <div className="nav-label">Analyses</div>
-          {GROUPS.map((g) => (
-            <button key={g} type="button" className="nav-item nav-plain" onClick={() => openSamples(g)}>
-              {g}
-            </button>
-          ))}
-        </div>
-        <div className="sidebar-foot">
-          <button type="button" className="nav-item" data-tour="replay" onClick={replayTour}>
-            <Icon name="compass" /> Take the tour
-          </button>
-          <button type="button" className={`nav-item key-item ${byok.key ? "has-key" : ""}`} onClick={() => setKeyOpen(true)}>
-            <span className="avatar">
-              <Icon name="key" size={14} />
-            </span>
-            <span className="nav-text">{byok.key ? `${providerName(byok.provider)} key` : "Add AI key"}</span>
-            <span className={`dot ${byok.key ? "on" : ""}`} aria-label={byok.key ? "AI on" : "AI off"} />
-          </button>
-        </div>
-      </aside>
 
-      <div className="main">
-      <div className="page">
-      <header className="page-head">
-        <div className="page-title">
-          <h1>{dataset ? title : "Make a graph"}</h1>
-          <p className="crumb">
-            Syvn Plot <span aria-hidden>·</span> {dataset && def ? def.label : dataset ? "Check your columns" : "Upload a CSV or Excel sheet, or start from a sample experiment"}
-          </p>
-        </div>
-        <SearchBar onPick={(e) => void onSearchPick(e)} />
-      </header>
-      {notice && (
-        <div className="notice" role="status">
-          {notice}
-          <button type="button" className="icon-btn" onClick={() => setNotice(null)} aria-label="Dismiss">✕</button>
-        </div>
-      )}
+        {mode === "graph" && dataset && spec && def && (
+          <div className="board">
+            <div className="canvas">
+              <div className="canvas-inner">
+                <header className="dash-head">
+                  <span className="hero-eyebrow">{sample && sample.file === dataset.fileName ? `Sample experiment · ${sample.experiment}` : `Your data${dataset.sheetName ? ` · ${dataset.sheetName}` : ""}`}</span>
+                  <h1>{sample && sample.file === dataset.fileName ? sample.title : dataset.fileName}</h1>
+                  <p>{sample && sample.file === dataset.fileName ? sample.description : def.description}</p>
+                </header>
 
-      <section
-        data-tour="upload"
-        className={`drop ${dragging ? "drop-active" : ""} ${dataset ? "drop-compact" : ""}`}
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragging(true)
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
-          e.preventDefault()
-          setDragging(false)
-          const f = e.dataTransfer.files[0]
-          if (f) void load(f)
-        }}
-        onClick={() => inputRef.current?.click()}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv,.tsv,.txt,.xlsx,.xls,.xlsm,.ods"
-          hidden
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) void load(f)
-            e.target.value = ""
-          }}
-        />
-        <strong>{dataset ? "Drop another file or click to replace" : "Drag a CSV or Excel file here"}</strong>
-        {!dataset && <span>or click to choose a file · .csv .tsv .xlsx .xls · up to 2 MB</span>}
-      </section>
-
-      <details id="samples" data-tour="samples" className="samples-box" open={samplesOpen} onToggle={(e) => setSamplesOpen((e.target as HTMLDetailsElement).open)}>
-        <summary>Sample experiments ({SAMPLE_EXPERIMENTS.length}) — one for every analysis</summary>
-        {GROUPS.map((g) => (
-          <div key={g} id={`group-${g}`} className="sample-group">
-            <h3>{g}</h3>
-            <div className="sample-grid">
-              {SAMPLE_EXPERIMENTS.filter((e) => analysisById(e.analysis)?.group === g).map((e) => (
-                <button key={e.title} type="button" className={`sample-card ${sample === e ? "active" : ""}`} onClick={() => void loadSample(e)}>
-                  <strong>{e.title}</strong>
-                  <span className="exp">{e.experiment}</span>
-                  <span className="as">{analysisById(e.analysis)?.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </details>
-
-      {problem && <div className="problem">{problem}</div>}
-
-      {dataset && !spec && (
-        <DataSummary
-          dataset={dataset}
-          detections={detections}
-          onGenerate={generate}
-          sheetPicker={
-            dataset.sheetNames && dataset.sheetNames.length > 1 && file ? (
-              <label className="field">
-                <span>Sheet</span>
-                <select value={dataset.sheetName} onChange={(e) => void load(file, e.target.value)}>
-                  {dataset.sheetNames.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </label>
-            ) : null
-          }
-        />
-      )}
-
-      {dataset && spec && def && (
-        <>
-          {sample && sample.file === dataset.fileName && (
-            <div className="sample-banner">
-              <span className="exp">Sample experiment · {sample.experiment}</span>
-              <strong>{sample.title}</strong>
-              <span>{sample.description}</span>
-            </div>
-          )}
-
-          <section className="panel analysis-bar" data-tour="analysis">
-            <div className="row">
-              {dataset.sheetNames && dataset.sheetNames.length > 1 && file && (
-                <label className="field">
-                  <span>Sheet</span>
-                  <select value={dataset.sheetName} onChange={(e) => void load(file, e.target.value)}>
-                    {dataset.sheetNames.map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <label className="field grow">
-                <span>Analysis</span>
-                <select value={spec.analysis} onChange={(e) => pickAnalysis(e.target.value as AnalysisId)}>
-                  {GROUPS.map((g) => (
-                    <optgroup key={g} label={g}>
-                      {ANALYSES.filter((a) => a.group === g).map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {scoreOf(a.id) >= 30 ? "● " : "  "}
-                          {a.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="desc">
-              {def.description} <span className="dim">● = fits this data. Pick the test and graph style on the graph below.</span>
-            </p>
-          </section>
-
-          <details className="panel setup">
-            <summary>
-              <strong>Columns &amp; options</strong>
-              {spec.xColumn ? ` · X: ${spec.xColumn}` : ""}
-              {spec.yColumns.length ? ` · Y: ${spec.yColumns.slice(0, 3).join(", ")}${spec.yColumns.length > 3 ? "…" : ""}` : ""}
-              {spec.groupBy ? ` · Group: ${spec.groupBy}` : ""}
-            </summary>
-            <div className="row">
-              <button type="button" className="ghost" onClick={() => setShowMessages((v) => !v)}>
-                {showMessages ? "Hide" : "Show"} A2UI messages
-              </button>
-            </div>
-            <div className="row wrap">
-              {def.roles.map((r) => {
-                const eligible = dataset.columns.filter((c) => r.kinds.includes(c.kind) || (r.kinds.includes("category") && c.kind === "text"))
-                const chosen = spec.roles[r.key] ?? []
-                return r.multiple ? (
-                  <div key={r.key} className="field">
-                    <span>
-                      {r.label}
-                      {r.optional ? " (optional)" : ""}
-                    </span>
-                    <div className="chips">
-                      {eligible.map((c) => (
-                        <button key={c.name} type="button" aria-pressed={chosen.includes(c.name)} onClick={() => setRole(r.key, chosen.includes(c.name) ? chosen.filter((n) => n !== c.name) : [...chosen, c.name])}>
-                          {c.name}
-                        </button>
-                      ))}
-                      {!eligible.length && <em className="dim">no {r.kinds.join("/")} columns</em>}
-                    </div>
+                <div className="kpis">
+                  <div className="kpi">
+                    <span className="kpi-icon tone-sky"><Icon name="rows" size={16} /></span>
+                    <strong>{dataset.rowCount.toLocaleString()}</strong>
+                    <span>rows · {dataset.columns.length} columns</span>
                   </div>
-                ) : (
-                  <label key={r.key} className="field">
-                    <span>{r.label}</span>
-                    <select value={chosen[0] ?? ""} onChange={(e) => setRole(r.key, e.target.value ? [e.target.value] : [])}>
-                      {(r.optional || !chosen.length) && <option value="">{r.optional ? "(none)" : "— pick —"}</option>}
-                      {eligible.map((c) => (
-                        <option key={c.name}>{c.name}</option>
+                  <div className="kpi">
+                    <span className="kpi-icon tone-violet"><Icon name="chart" size={16} /></span>
+                    <strong className="kpi-text">{def.label}</strong>
+                    <span>{def.group}</span>
+                  </div>
+                  <div className="kpi kpi-wide">
+                    <span className="kpi-icon tone-green"><Icon name="sparkles" size={16} /></span>
+                    <strong className="kpi-text" title={headline}>{headline || "Calculating…"}</strong>
+                    <span>At a glance</span>
+                  </div>
+                </div>
+
+                <section className="toolbar-card" data-tour="analysis">
+                  {sheetPicker}
+                  <label className="field grow">
+                    <span>Analysis</span>
+                    <select value={spec.analysis} onChange={(e) => pickAnalysis(e.target.value as AnalysisId)}>
+                      {GROUPS.map((g) => (
+                        <optgroup key={g} label={g}>
+                          {ANALYSES.filter((a) => a.group === g).map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {scoreOf(a.id) >= 30 ? "● " : "  "}
+                              {a.label}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                   </label>
-                )
-              })}
-              {(def.params ?? [])
-                .filter((p) => !(spec.analysis === "two_way" && p.key === "chart") && p.key !== "test" && p.key !== "posthoc")
-                .map((p) => {
-                  const src = p.levelsOf ? dataset.columns.find((c) => c.name === spec.roles[p.levelsOf!]?.[0]) : undefined
-                  const choices = p.values ?? (p.columnsOf ? (spec.roles[p.columnsOf] ?? []) : src ? levelsOf(src) : [])
-                  return (
-                    <label key={p.key} className="field">
-                      <span>{p.label}</span>
-                      <select value={spec.params[p.key] ?? ""} onChange={(e) => setParam(p.key, e.target.value)}>
-                        {choices.map((v) => (
-                          <option key={v}>{v}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )
-                })}
+                  <span className="dim small toolbar-note">● = fits this data</span>
+                </section>
+
+                <details className="panel setup">
+                  <summary>
+                    <strong>Columns &amp; options</strong>
+                    {spec.xColumn ? ` · X: ${spec.xColumn}` : ""}
+                    {spec.yColumns.length ? ` · Y: ${spec.yColumns.slice(0, 3).join(", ")}${spec.yColumns.length > 3 ? "…" : ""}` : ""}
+                    {spec.groupBy ? ` · Group: ${spec.groupBy}` : ""}
+                  </summary>
+                  <div className="row">
+                    <button type="button" className="ghost" onClick={() => setShowMessages((v) => !v)}>
+                      {showMessages ? "Hide" : "Show"} A2UI messages
+                    </button>
+                  </div>
+                  <div className="row wrap">
+                    {def.roles.map((r) => {
+                      const eligible = dataset.columns.filter((c) => r.kinds.includes(c.kind) || (r.kinds.includes("category") && c.kind === "text"))
+                      const chosen = spec.roles[r.key] ?? []
+                      return r.multiple ? (
+                        <div key={r.key} className="field">
+                          <span>
+                            {r.label}
+                            {r.optional ? " (optional)" : ""}
+                          </span>
+                          <div className="chips">
+                            {eligible.map((c) => (
+                              <button key={c.name} type="button" aria-pressed={chosen.includes(c.name)} onClick={() => setRole(r.key, chosen.includes(c.name) ? chosen.filter((n) => n !== c.name) : [...chosen, c.name])}>
+                                {c.name}
+                              </button>
+                            ))}
+                            {!eligible.length && <em className="dim">no {r.kinds.join("/")} columns</em>}
+                          </div>
+                        </div>
+                      ) : (
+                        <label key={r.key} className="field">
+                          <span>{r.label}</span>
+                          <select value={chosen[0] ?? ""} onChange={(e) => setRole(r.key, e.target.value ? [e.target.value] : [])}>
+                            {(r.optional || !chosen.length) && <option value="">{r.optional ? "(none)" : "— pick —"}</option>}
+                            {eligible.map((c) => (
+                              <option key={c.name}>{c.name}</option>
+                            ))}
+                          </select>
+                        </label>
+                      )
+                    })}
+                    {(def.params ?? [])
+                      .filter((p) => !(spec.analysis === "two_way" && p.key === "chart") && p.key !== "test" && p.key !== "posthoc")
+                      .map((p) => {
+                        const src = p.levelsOf ? dataset.columns.find((c) => c.name === spec.roles[p.levelsOf!]?.[0]) : undefined
+                        const choices = p.values ?? (p.columnsOf ? (spec.roles[p.columnsOf] ?? []) : src ? levelsOf(src) : [])
+                        return (
+                          <label key={p.key} className="field">
+                            <span>{p.label}</span>
+                            <select value={spec.params[p.key] ?? ""} onChange={(e) => setParam(p.key, e.target.value)}>
+                              {choices.map((v) => (
+                                <option key={v}>{v}</option>
+                              ))}
+                            </select>
+                          </label>
+                        )
+                      })}
+                  </div>
+                </details>
+
+                {problem && <div className="problem">{problem}</div>}
+                <DataPreview dataset={dataset} onRename={renameColumn} />
+
+                <div className="workspace">
+                  <main className="surface">
+                    <AiActionsContext.Provider value={aiActions}>
+                      <ResearchSurface
+                        key={`${dataset.fileName}|${dataset.sheetName ?? ""}`}
+                        ds={dataset}
+                        spec={spec}
+                        onSpec={onSurfaceSpec}
+                        title={title}
+                        overrides={overrides}
+                        showMessages={showMessages}
+                        agentLog={agentLog}
+                        onComponents={setComponents}
+                        onComputed={setComputed}
+                      />
+                    </AiActionsContext.Provider>
+                  </main>
+                </div>
+              </div>
             </div>
-          </details>
-
-          <DataPreview dataset={dataset} onRename={renameColumn} />
-
-          <div className="workspace">
-            <main className="surface">
-              <AiActionsContext.Provider value={aiActions}>
-              <ResearchSurface
-                key={`${dataset.fileName}|${dataset.sheetName ?? ""}`}
-                ds={dataset}
-                spec={spec}
-                onSpec={onSurfaceSpec}
-                title={title}
-                overrides={overrides}
-                showMessages={showMessages}
-                agentLog={agentLog}
-                onComponents={setComponents}
-                onComputed={setComputed}
-              />
-              </AiActionsContext.Provider>
-            </main>
             <aside className="side" data-tour="assistant">
               <ChatPanel
                 dataset={dataset}
@@ -559,11 +562,18 @@ export default function App() {
               />
             </aside>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
-      </div>
-      </div>
+      {dragging && (
+        <div className="drop-veil" aria-hidden>
+          <div>
+            <Icon name="upload" size={28} />
+            <strong>Drop to open</strong>
+            <span>CSV or Excel · up to 2 MB</span>
+          </div>
+        </div>
+      )}
 
       {keyOpen && (
         <ApiKeyModal

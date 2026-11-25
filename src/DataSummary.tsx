@@ -74,6 +74,27 @@ export function DataSummary({ dataset, detections, onGenerate, sheetPicker }: { 
   )
 }
 
+/** One card per column: its kind and a quick look at the values. */
+export function ColumnCards({ dataset }: { dataset: Dataset }) {
+  return (
+    <div className="col-grid">
+      {dataset.columns.map((c) => {
+        const missing = c.values.filter((v) => v === null).length
+        return (
+          <div key={c.name} className="col-card">
+            <div className="col-top">
+              <strong title={c.name}>{c.name}</strong>
+              <span className={`tag tag-${c.kind}`}>{KIND_LABEL[c.kind]}</span>
+            </div>
+            <span className="col-prev">{preview(c)}</span>
+            {missing > 0 && <span className="col-miss">{missing} empty</span>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function DataPreview({ dataset, onRename }: { dataset: Dataset; onRename: (from: string, to: string) => void }) {
   const rows = Math.min(dataset.rowCount, 8)
   const [renaming, setRenaming] = useState(false)
